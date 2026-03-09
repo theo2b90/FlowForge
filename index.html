@@ -3814,6 +3814,12 @@ APPROCHE DE DÉVELOPPEMENT :
             const recurrence = validRecurrences.includes(task?.recurrence) ? task.recurrence : 'one-shot';
             const fallbackCreatedAt = Number.isFinite(task?.id) && task.id > 946684800000 ? task.id : Date.now();
 
+            // Correction : inclure deadline si présent
+            let deadline = null;
+            if (typeof task?.deadline !== 'undefined') {
+                deadline = task.deadline;
+            }
+
             return {
                 id: task?.id ?? Date.now(),
                 name: typeof task?.name === 'string' ? task.name : 'Tâche',
@@ -3821,7 +3827,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 completed: Boolean(task?.completed),
                 recurrence,
                 completedAt: Number.isFinite(task?.completedAt) ? task.completedAt : 0,
-                createdAt: Number.isFinite(task?.createdAt) ? task.createdAt : fallbackCreatedAt
+                createdAt: Number.isFinite(task?.createdAt) ? task.createdAt : fallbackCreatedAt,
+                ...(typeof deadline !== 'undefined' ? { deadline } : {})
             };
         }
 
@@ -3831,12 +3838,17 @@ APPROCHE DE DÉVELOPPEMENT :
          * @returns {Object} Objectif normalise
          */
         function normalizeManualGoal(goal) {
+            let deadline = null;
+            if (typeof goal?.deadline !== 'undefined') {
+                deadline = goal.deadline;
+            }
             return {
                 id: goal?.id ?? Date.now(),
                 text: typeof goal?.text === 'string' ? goal.text : 'Objectif',
                 completed: Boolean(goal?.completed),
                 completedAt: Number.isFinite(goal?.completedAt) ? goal.completedAt : 0,
-                createdAt: Number.isFinite(goal?.createdAt) ? goal.createdAt : Date.now()
+                createdAt: Number.isFinite(goal?.createdAt) ? goal.createdAt : Date.now(),
+                ...(typeof deadline !== 'undefined' ? { deadline } : {})
             };
         }
 
@@ -5520,24 +5532,31 @@ APPROCHE DE DÉVELOPPEMENT :
             const nameInput = document.getElementById('taskNameInput');
             const timeInput = document.getElementById('taskTimeInput');
             const recurrenceInput = document.getElementById('taskRecurrenceInput');
-            
+            const deadlineInput = document.getElementById('taskDeadlineInput');
+
             if (!nameInput || !timeInput || !recurrenceInput) return;
-            
+
             const name = nameInput.value.trim();
             const dedicatedMinutes = parseInt(timeInput.value);
             const recurrence = recurrenceInput.value || 'one-shot';
-            
+            let deadline = null;
+            if (deadlineInput && deadlineInput.value) {
+                // Stocker en timestamp pour cohérence
+                deadline = Date.parse(deadlineInput.value);
+                if (!Number.isFinite(deadline)) deadline = null;
+            }
+
             if (!name) {
                 alert('Veuillez entrer un nom de tâche');
                 return;
             }
-            
+
             if (!dedicatedMinutes || dedicatedMinutes <= 0) {
                 alert('Veuillez entrer un temps valide (en minutes)');
                 return;
             }
-            
-            tasks.push({
+
+            const newTask = {
                 id: Date.now(),
                 name,
                 dedicatedMinutes,
@@ -5545,14 +5564,19 @@ APPROCHE DE DÉVELOPPEMENT :
                 recurrence,
                 completedAt: 0,
                 createdAt: Date.now()
-            });
-            
+            };
+            if (deadline) {
+                newTask.deadline = deadline;
+            }
+            tasks.push(newTask);
+
             localStorage.setItem('tasks', JSON.stringify(tasks));
-            
+
             nameInput.value = '';
             timeInput.value = '';
+            if (deadlineInput) deadlineInput.value = '';
             nameInput.focus();
-            
+
             renderChecklist();
             render();
             renderInsights();
@@ -5717,14 +5741,62 @@ APPROCHE DE DÉVELOPPEMENT :
             const container = document.getElementById('checklistContent');
             if (!container) return;
             
-            const tasksHtml = tasks.length > 0
-                ? tasks.map(task => {
+            // Suppression automatique des tâches expirées (deadline dépassée)
+            const now = Date.now();
+            let filteredTasks = tasks.filter(task => {
+                if (task.deadline) {
+                    const deadlineTs = typeof task.deadline === 'string' ? Date.parse(task.deadline) : task.deadline;
+                    if (Number.isFinite(deadlineTs) && now > deadlineTs) {
+                        // Supprimer la tâche expirée
+                        return false;
+                    }
+                }
+                return true;
+            });
+            if (filteredTasks.length !== tasks.length) {
+                localStorage.setItem('tasks', JSON.stringify(filteredTasks));
+                tasks = filteredTasks;
+            }
+            // Tri : tâches avec deadline la plus proche en haut, puis tâches sans deadline, puis complétées en bas
+            const sortedTasks = tasks.slice().sort((a, b) => {
+                const aDeadline = a.deadline ? (typeof a.deadline === 'string' ? Date.parse(a.deadline) : a.deadline) : null;
+                const bDeadline = b.deadline ? (typeof b.deadline === 'string' ? Date.parse(b.deadline) : b.deadline) : null;
+                if (aDeadline && bDeadline) return aDeadline - bDeadline;
+                if (aDeadline && !bDeadline) return -1;
+                if (!aDeadline && bDeadline) return 1;
+                if (a.completed && !b.completed) return 1;
+                if (!a.completed && b.completed) return -1;
+                // Plus récent en haut
+                return (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0);
+            });
+            const tasksHtml = sortedTasks.length > 0
+                ? sortedTasks.map(task => {
                     const matchingContext = contexts.find(c => 
                         c.name.toLowerCase().trim() === task.name.toLowerCase().trim()
                     );
                     const isMatching = matchingContext !== undefined;
                     const completedNow = isTaskCompletedNow(task);
-                    
+                    // Affichage deadline et barre de progression
+                    let deadlineHtml = '';
+                    if (task.deadline) {
+                        const deadlineTs = typeof task.deadline === 'string' ? Date.parse(task.deadline) : task.deadline;
+                        if (Number.isFinite(deadlineTs)) {
+                            const created = task.createdAt || task.id || Date.now();
+                            const total = deadlineTs - created;
+                            const reste = deadlineTs - now;
+                            const percent = Math.max(0, Math.min(100, 100 - (reste / total) * 100));
+                            const dateStr = new Date(deadlineTs).toLocaleDateString('fr-FR');
+                            deadlineHtml = `
+                                <div class="task-deadline-info" style="margin-top:4px;">
+                                    <span style="font-size:11px;color:#64748b;">⏳ Échéance : <b>${dateStr}</b></span>
+                                    <div style="height:6px;background:#e5e7eb;border-radius:4px;margin-top:2px;overflow:hidden;">
+                                        <div style="height:6px;width:${percent}%;background:#f59e42;border-radius:4px;"></div>
+                                    </div>
+                                    <span style="font-size:10px;color:#888;">${Math.max(0, Math.round(reste/86400000))} jour(s) restant(s)</span>
+                                </div>
+                            `;
+                        }
+                    }
                     return `
                         <div class="task-item ${completedNow ? 'completed' : ''}">
                             <input type="checkbox" 
@@ -5737,6 +5809,7 @@ APPROCHE DE DÉVELOPPEMENT :
                                     ${isMatching ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : ''}
                                 </div>
                                 <div class="task-time">⏱️ ${task.dedicatedMinutes} min • ${getRecurrenceLabel(task.recurrence)}</div>
+                                ${deadlineHtml}
                                 <div style="margin-top: 6px;">
                                     <select onchange="setTaskRecurrence(${task.id}, this.value)" style="font-size: 11px; padding: 3px 5px; border: 1px solid #ddd; border-radius: 4px;">
                                         <option value="one-shot" ${task.recurrence === 'one-shot' ? 'selected' : ''}>One shot</option>
@@ -5768,6 +5841,7 @@ APPROCHE DE DÉVELOPPEMENT :
                         <option value="monthly">Mensuelle</option>
                         <option value="yearly">Annuelle</option>
                     </select>
+                    <input type="date" id="taskDeadlineInput" placeholder="Date butoir (optionnelle)" style="margin-top:4px; font-size:12px; padding:7px; border-radius:4px; border:1px solid #ddd;" />
                     <button onclick="addTask()">+ Ajouter une tâche</button>
                 </div>
                 <details class="sync-help">
@@ -7301,6 +7375,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     ? (progressPct >= 100 || isTaskCompletedNow(task))
                     : progressPct >= 100;
 
+                // Propager deadline et createdAt pour l'affichage dans Insights
                 return {
                     id: task.id,
                     name: task.name,
@@ -7310,7 +7385,9 @@ APPROCHE DE DÉVELOPPEMENT :
                     actualMinutes,
                     progressPct,
                     isLinked: Boolean(matchingContext),
-                    completed: isCompleted
+                    completed: isCompleted,
+                    deadline: task.deadline || null,
+                    createdAt: task.createdAt || null
                 };
             });
         }
@@ -7454,18 +7531,21 @@ APPROCHE DE DÉVELOPPEMENT :
                 const autoSectionsHtml = ['daily', 'weekly', 'monthly', 'yearly'].map(period => {
                     const group = taskObjectives.filter(goal => goal.recurrence === period);
                     const body = group.length > 0
-                        ? group.map(goal => `
-                            <div class="goal-item ${goal.completed ? 'completed' : ''}">
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                    <div class="goal-text" style="text-decoration: none;">${escapeHtml(goal.name)}</div>
-                                    ${goal.isLinked ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : '<span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 8px;">NON LIEE</span>'}
+                        ? group.map(goal => {
+                            // Plus de deadline pour les objectifs auto (liés aux tâches)
+                            return `
+                                <div class="goal-item ${goal.completed ? 'completed' : ''}">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <div class="goal-text" style="text-decoration: none;">${escapeHtml(goal.name)}</div>
+                                        ${goal.isLinked ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : '<span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 8px;">NON LIEE</span>'}
+                                    </div>
+                                    <div style="font-size: 12px; color: #475569; margin-bottom: 6px; margin-top:4px;">${goal.actualMinutes} min / ${goal.totalTargetMinutes} min (${goal.progressPct}%)</div>
+                                    <div style="height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                                        <div style="height: 100%; width: ${goal.progressPct}%; background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);"></div>
+                                    </div>
                                 </div>
-                                <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">${goal.actualMinutes} min / ${goal.totalTargetMinutes} min (${goal.progressPct}%)</div>
-                                <div style="height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
-                                    <div style="height: 100%; width: ${goal.progressPct}%; background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);"></div>
-                                </div>
-                            </div>
-                        `).join('')
+                            `;
+                        }).join('')
                         : '<p style="color: #999; margin: 4px 0 10px; font-size: 12px;">Aucune tâche liée à cette période.</p>';
 
                     return `
@@ -7476,6 +7556,28 @@ APPROCHE DE DÉVELOPPEMENT :
                     `;
                 }).join('');
 
+                // Suppression automatique des objectifs expirés
+                const now = Date.now();
+                ['daily', 'weekly', 'monthly', 'yearly'].forEach(period => {
+                    let collection = getManualGoalsCollection(period);
+                    let filtered = collection.filter(goal => {
+                        if (goal.deadline) {
+                            const deadlineTs = typeof goal.deadline === 'string' ? Date.parse(goal.deadline) : goal.deadline;
+                            if (Number.isFinite(deadlineTs) && now > deadlineTs) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                    if (filtered.length !== collection.length) {
+                        saveManualGoalsCollection(period);
+                        // On retire les expirés de la variable globale
+                        if (period === 'daily') dailyGoals = filtered;
+                        if (period === 'weekly') weeklyGoals = filtered;
+                        if (period === 'monthly') monthlyGoals = filtered;
+                        if (period === 'yearly') yearlyGoals = filtered;
+                    }
+                });
                 const manualGoalsFlat = ['daily', 'weekly', 'monthly', 'yearly']
                     .flatMap(period => getManualGoalsCollection(period).map(goal => ({ ...goal, period })))
                     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -7483,11 +7585,32 @@ APPROCHE DE DÉVELOPPEMENT :
                 const manualGoalsHtml = manualGoalsFlat.length > 0
                     ? manualGoalsFlat.map(goal => {
                         const isCompleted = isManualGoalCompletedNow(goal, goal.period);
+                        let deadlineHtml = '';
+                        if (goal.deadline) {
+                            const deadlineTs = typeof goal.deadline === 'string' ? Date.parse(goal.deadline) : goal.deadline;
+                            if (Number.isFinite(deadlineTs)) {
+                                const created = goal.createdAt || goal.id || Date.now();
+                                const total = deadlineTs - created;
+                                const reste = deadlineTs - now;
+                                const percent = Math.max(0, Math.min(100, 100 - (reste / total) * 100));
+                                const dateStr = new Date(deadlineTs).toLocaleDateString('fr-FR');
+                                deadlineHtml = `
+                                    <div class="goal-deadline-info" style="margin-top:4px;">
+                                        <span style="font-size:11px;color:#64748b;">⏳ Échéance : <b>${dateStr}</b></span>
+                                        <div style="height:6px;background:#e5e7eb;border-radius:4px;margin-top:2px;overflow:hidden;">
+                                            <div style="height:6px;width:${percent}%;background:#f59e42;border-radius:4px;"></div>
+                                        </div>
+                                        <span style="font-size:10px;color:#888;">${Math.max(0, Math.round(reste/86400000))} jour(s) restant(s)</span>
+                                    </div>
+                                `;
+                            }
+                        }
                         return `
                         <div class="goal-item ${isCompleted ? 'completed' : ''}">
                             <input type="checkbox" class="goal-checkbox" ${isCompleted ? 'checked' : ''}
                                    onchange="toggleManualGoal('${goal.period}', ${goal.id})">
                             <div class="goal-text">${escapeHtml(goal.text)} <span style="font-size: 10px; color: #64748b;">${periodMeta[goal.period].icon} ${periodMeta[goal.period].label}</span></div>
+                            ${deadlineHtml}
                             <div class="goal-actions">
                                 <button class="delete" onclick="deleteManualGoal('${goal.period}', ${goal.id})">Supprimer</button>
                             </div>
@@ -7504,15 +7627,16 @@ APPROCHE DE DÉVELOPPEMENT :
                     </div>
 
                     <div style="margin: 10px 0 8px; font-size: 13px; color: #334155; font-weight: 700;">Objectifs manuels (independants)</div>
-                    <div class="goal-add" style="margin-bottom: 10px;">
-                        <input type="text" id="goalTextInput" placeholder="Nouvel objectif manuel..." />
-                        <select id="goalPeriodInput" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px;">
+                    <div class="goal-add" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                        <input type="text" id="goalTextInput" placeholder="Nouvel objectif manuel..." style="flex:2; min-width:120px;" />
+                        <select id="goalPeriodInput" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px; flex:1; min-width:110px;">
                             <option value="daily">📅 Journalier</option>
                             <option value="weekly" selected>🗓️ Hebdomadaire</option>
                             <option value="monthly">📆 Mensuel</option>
                             <option value="yearly">🧭 Annuel</option>
                         </select>
-                        <button class="add-word-btn" onclick="addManualGoalFromForm()" style="margin-top: 8px;">🎯 Ajouter</button>
+                        <input type="date" id="goalDeadlineInput" placeholder="Date butoir (optionnelle)" style="font-size:12px; padding:7px; border-radius:4px; border:1px solid #ddd; flex:1; min-width:120px;" />
+                        <button class="add-word-btn" onclick="addManualGoalFromForm()" style="margin-top: 0; flex:1; min-width:90px;">🎯 Ajouter</button>
                     </div>
                     ${manualGoalsHtml}
                 `;
@@ -7568,31 +7692,41 @@ APPROCHE DE DÉVELOPPEMENT :
             const input = document.getElementById('goalTextInput');
             const periodInput = document.getElementById('goalPeriodInput');
             if (!input) return;
-
             const period = periodInput ? periodInput.value : 'weekly';
-            addManualGoal(period, input.value);
+            const deadlineInput = document.getElementById('goalDeadlineInput');
+            let deadline = null;
+            if (deadlineInput && deadlineInput.value) {
+                deadline = Date.parse(deadlineInput.value);
+                if (!Number.isFinite(deadline)) deadline = null;
+            }
+            addManualGoal(period, input.value, deadline);
             if (input) input.focus();
         }
 
         function addManualGoal(period, prefilledText) {
             const input = document.getElementById('goalTextInput');
-
+            const deadlineInput = document.getElementById('goalDeadlineInput');
             const text = String(prefilledText ?? (input ? input.value : '')).trim();
+            let deadline = null;
+            if (deadlineInput && deadlineInput.value) {
+                deadline = Date.parse(deadlineInput.value);
+                if (!Number.isFinite(deadline)) deadline = null;
+            }
             if (!text) {
                 alert('Veuillez entrer un objectif');
                 return;
             }
-
             const collection = getManualGoalsCollection(period);
             collection.push(normalizeManualGoal({
                 id: Date.now(),
                 text,
                 completed: false,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                ...(deadline ? { deadline } : {})
             }));
-
             saveManualGoalsCollection(period);
             if (input) input.value = '';
+            if (deadlineInput) deadlineInput.value = '';
             renderInsights();
         }
 
