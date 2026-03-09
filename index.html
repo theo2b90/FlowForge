@@ -2845,6 +2845,7 @@ APPROCHE DE DÉVELOPPEMENT :
                             Activer
                         </label>
                     </div>
+                    
                     <div class="separator"></div>
                     <button onclick="exportData(); closeActionsMenu()" title="Télécharger une sauvegarde JSON">
                         <span>📥</span>
@@ -3073,6 +3074,30 @@ APPROCHE DE DÉVELOPPEMENT :
             </div>
         </div>
     </div>
+
+            <!-- Modal: schedule selector for tasks without a time -->
+            <div class="schedule-modal" id="scheduleModal" onclick="handleScheduleOverlayClick(event)" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9999;">
+                <div class="schedule-modal-panel" style="width:360px; padding:14px; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.16); margin:80px auto; position:relative; top:50%; transform:translateY(-50%);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div style="font-weight:700;">Planifier la tâche sans durée</div>
+                        <button onclick="closeScheduleModal()" style="background:#f3f4f6;border:0;padding:6px 8px;border-radius:6px;">✕</button>
+                    </div>
+                    <!-- deadline handled in the main form; not shown here -->
+                    <div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; text-align:center; margin-bottom:12px;">
+                        <label style="font-size:12px;"><input type="checkbox" data-day="1"> Lun</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="2"> Mar</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="3"> Mer</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="4"> Jeu</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="5"> Ven</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="6"> Sam</label>
+                        <label style="font-size:12px;"><input type="checkbox" data-day="0"> Dim</label>
+                    </div>
+                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button onclick="cancelScheduleModal()" style="background:#f1f5f9;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">Annuler</button>
+                        <button onclick="confirmScheduledTask()" style="background:#3b82f6;color:#fff;padding:8px 12px;border-radius:6px;border:0;">Créer tâche planifiée</button>
+                    </div>
+                </div>
+            </div>
 
     <!-- Modal de gestion des moteurs de recherche -->
     <div class="search-engines-modal" id="searchEnginesModal" onclick="handleSearchEnginesOverlayClick(event)">
@@ -3417,6 +3442,8 @@ APPROCHE DE DÉVELOPPEMENT :
         // Liste des taches
         const storedTasks = readJsonStorage('tasks', []);
         let tasks = (Array.isArray(storedTasks) ? storedTasks : []).map(normalizeTask);
+        // Pending scheduled task used when creating tasks without minutes
+        let pendingScheduledTask = null;
         let taskNotificationShown = {};
         
         // Insights (Statistiques, Journal, Objectifs)
@@ -3444,6 +3471,8 @@ APPROCHE DE DÉVELOPPEMENT :
          */
         let regularityResetTs = Number(localStorage.getItem('regularityResetTs') || 0);
         let regularityResetBaseline = readJsonStorage('regularityResetBaseline', {});
+        // Daily stars tracking for scheduled tasks (dates in YYYY-MM-DD)
+        let dailyStars = readJsonStorage('dailyStars', []);
         const storedJournalEntries = readJsonStorage('journalEntries', []);
         const storedDailyGoals = readJsonStorage('dailyGoals', []);
         
@@ -3820,14 +3849,20 @@ APPROCHE DE DÉVELOPPEMENT :
                 deadline = task.deadline;
             }
 
+            const completedAt = Number(task?.completedAt || 0);
+            const createdAt = Number.isFinite(Number(task?.createdAt)) ? Number(task.createdAt) : fallbackCreatedAt;
+            const carryoverMinutes = Number.isFinite(Number(task?.carryoverMinutes)) ? Number(task.carryoverMinutes) : 0;
+            const scheduleDays = Array.isArray(task?.scheduleDays) ? task.scheduleDays.map(Number).filter(d => Number.isFinite(d)) : [];
             return {
                 id: task?.id ?? Date.now(),
                 name: typeof task?.name === 'string' ? task.name : 'Tâche',
-                dedicatedMinutes: Number.isFinite(task?.dedicatedMinutes) ? task.dedicatedMinutes : 25,
+                dedicatedMinutes: Number.isFinite(Number(task?.dedicatedMinutes)) ? Number(task.dedicatedMinutes) : 0,
                 completed: Boolean(task?.completed),
                 recurrence,
-                completedAt: Number.isFinite(task?.completedAt) ? task.completedAt : 0,
-                createdAt: Number.isFinite(task?.createdAt) ? task.createdAt : fallbackCreatedAt,
+                completedAt: Number.isFinite(completedAt) ? completedAt : 0,
+                createdAt: createdAt,
+                carryoverMinutes,
+                scheduleDays,
                 ...(typeof deadline !== 'undefined' ? { deadline } : {})
             };
         }
@@ -3842,12 +3877,14 @@ APPROCHE DE DÉVELOPPEMENT :
             if (typeof goal?.deadline !== 'undefined') {
                 deadline = goal.deadline;
             }
+            const completedAt = Number(goal?.completedAt || 0);
+            const createdAt = Number.isFinite(Number(goal?.createdAt)) ? Number(goal.createdAt) : Date.now();
             return {
                 id: goal?.id ?? Date.now(),
                 text: typeof goal?.text === 'string' ? goal.text : 'Objectif',
                 completed: Boolean(goal?.completed),
-                completedAt: Number.isFinite(goal?.completedAt) ? goal.completedAt : 0,
-                createdAt: Number.isFinite(goal?.createdAt) ? goal.createdAt : Date.now(),
+                completedAt: Number.isFinite(completedAt) ? completedAt : 0,
+                createdAt: createdAt,
                 ...(typeof deadline !== 'undefined' ? { deadline } : {})
             };
         }
@@ -3860,10 +3897,10 @@ APPROCHE DE DÉVELOPPEMENT :
          */
         function isManualGoalCompletedNow(goal, period) {
             if (!goal || !goal.completed) return false;
-            if (!Number.isFinite(goal.completedAt) || goal.completedAt <= 0) return false;
-            
+            const completedAt = Number(goal.completedAt || 0);
+            if (!Number.isFinite(completedAt) || completedAt <= 0) return false;
             const nowKey = getTaskPeriodKey(period, new Date());
-            const completedKey = getTaskPeriodKey(period, new Date(goal.completedAt));
+            const completedKey = getTaskPeriodKey(period, new Date(completedAt));
             return nowKey === completedKey;
         }
 
@@ -4029,13 +4066,68 @@ APPROCHE DE DÉVELOPPEMENT :
         function isTaskCompletedNow(task) {
             if (!task) return false;
             if (task.recurrence === 'one-shot') return Boolean(task.completed);
-            if (!Number.isFinite(task.completedAt) || task.completedAt <= 0) return false;
+            const completedAt = Number(task.completedAt || 0);
+            if (!Number.isFinite(completedAt) || completedAt <= 0) return false;
 
             // Pour les tâches récurrentes (hebdo/mensuelle/annuelle), la coche se réinitialise CHAQUE JOUR
             // car l'objectif est journalier (ex: 120 min/jour pendant 7 jours pour une tâche hebdo)
             const nowKey = getTaskPeriodKey('daily', new Date());
-            const completedKey = getTaskPeriodKey('daily', new Date(task.completedAt));
+            const completedKey = getTaskPeriodKey('daily', new Date(completedAt));
             return nowKey === completedKey;
+        }
+
+        /**
+         * Vérifie si une tâche est complétée pour une récurrence donnée (daily|weekly|monthly|yearly|one-shot)
+         * @param {Object} task
+         * @param {string} recurrence
+         * @returns {boolean}
+         */
+        function isTaskCompletedForRecurrence(task, recurrence) {
+            if (!task) return false;
+            if (recurrence === 'one-shot') return Boolean(task.completed);
+
+            // Si l'utilisateur a coché manuellement pour cette récurrence
+            const completedAt = Number(task.completedAt || 0);
+            if (Number.isFinite(completedAt) && completedAt > 0) {
+                const nowKey = getTaskPeriodKey(recurrence, new Date());
+                const completedKey = getTaskPeriodKey(recurrence, new Date(completedAt));
+                if (nowKey === completedKey) return true;
+            }
+
+            // Pour la récurrence 'daily', on peut utiliser le carryoverMinutes pour valider la journée
+            if (recurrence === 'daily') {
+                const matchingContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(task.name || '').trim().toLowerCase());
+                const minutesToday = matchingContext ? getContextTimeInLastNDays(task, matchingContext, 1) : 0;
+                const dailyTarget = Number(task.dedicatedMinutes) || 0;
+                const needed = Math.max(0, dailyTarget - minutesToday);
+                if (needed <= 0) return true;
+
+                // utiliser carryover si disponible
+                const carry = Number(task.carryoverMinutes || 0);
+                if (carry >= needed) {
+                    task.carryoverMinutes = Math.max(0, carry - needed);
+                    // Persister le carryover utilisé
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                    return true;
+                }
+
+                return false;
+            }
+
+            // Pour les tâches planifiées sans durée (scheduleDays), vérifier la coche du jour
+            if (Array.isArray(task.scheduleDays) && task.scheduleDays.length > 0) {
+                const now = new Date();
+                const today = now.getDay(); // 0 = dimanche ... 6 = samedi
+                if (!task.scheduleDays.includes(today)) return false; // pas prévue aujourd'hui
+                const completedAt = Number(task.completedAt || 0);
+                if (!Number.isFinite(completedAt) || completedAt <= 0) return false;
+                const completedKey = getTaskPeriodKey('daily', new Date(completedAt));
+                const nowKey = getTaskPeriodKey('daily', now);
+                return nowKey === completedKey;
+            }
+
+            // Pour les autres récurrences, la coche timestamp est la source de vérité
+            return false;
         }
 
         /**
@@ -4175,6 +4267,87 @@ APPROCHE DE DÉVELOPPEMENT :
         }
 
         /**
+         * Calcule les minutes travaillées sur le contexte lié à une tâche sur les derniers N jours.
+         * Utilisé pour le calcul précis du score hebdomadaire.
+         * @param {Object} task
+         * @param {Object} context
+         * @param {number} days
+         * @returns {number} minutes
+         */
+        function getContextTimeInLastNDays(task, context, days) {
+            if (!task || !context || !Array.isArray(sessionHistory)) return 0;
+            const now = Date.now();
+            const windowStart = now - (Number(days) || 7) * 24 * 60 * 60 * 1000;
+
+            const getSessionDate = (session) => {
+                if (Number.isFinite(session?.timestamp) && session.timestamp > 0) {
+                    return new Date(session.timestamp);
+                }
+                if (typeof session?.startTime === 'string' && session.startTime.includes('-')) {
+                    const [y, m, d] = session.startTime.split('-').map(Number);
+                    return new Date(y, (m || 1) - 1, d || 1);
+                }
+                return null;
+            };
+
+            const normalizeName = (value) => String(value || '').trim().toLowerCase();
+            const targetName = normalizeName(context.name);
+
+            const minutes = sessionHistory
+                .filter(s => {
+                    if (!isSessionAfterRegularityReset(s)) return false;
+                    const sDate = getSessionDate(s);
+                    if (!sDate || Number.isNaN(sDate.getTime())) return false;
+                    if (sDate.getTime() < windowStart) return false;
+                    const sessionContextName = normalizeName(s?.contextName || s?.context);
+                    return sessionContextName === targetName;
+                })
+                .reduce((sum, s) => {
+                    // reuse getSessionDurationMinutes logic from getContextTimeInCurrentPeriod
+                    if (Number.isFinite(s?.durationMinutes)) return sum + Number(s.durationMinutes);
+                    const raw = Number(s?.duration || 0);
+                    if (!Number.isFinite(raw) || raw <= 0) return sum;
+                    if (s && !s.contextName && s.context) return sum + raw / 60;
+                    return sum + raw;
+                }, 0);
+
+            // ajouter le temps en cours si le contexte correspond et est en phase 'work'
+            const todayKey = getTaskPeriodKey('daily', new Date());
+            const inProgress = (context && context.phase === 'work') ? getInProgressWorkMinutes(context) : 0;
+            return Math.round(minutes + inProgress);
+        }
+
+        /**
+         * Distribue le surplus de minutes (si présent) vers carryoverMinutes des tâches liées au contexte.
+         * Limite le carryover à un nombre maximal de jours (maxCarryDays).
+         * @param {string} contextName
+         */
+        function distributeCarryoverForContext(contextName) {
+            if (!contextName) return;
+            // Carryover illimité : accumulez l'excès de minutes sans plafond
+            const matchingContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(contextName || '').trim().toLowerCase());
+            if (!matchingContext) return;
+
+            tasks.forEach(task => {
+                if (String(task.name || '').trim().toLowerCase() !== String(contextName || '').trim().toLowerCase()) return;
+                if (task.recurrence === 'one-shot') return; // pas de carryover pour one-shot
+
+                const dailyTarget = Number(task.dedicatedMinutes) || 0;
+                if (dailyTarget <= 0) return;
+
+                const minutesToday = getContextTimeInLastNDays(task, matchingContext, 1);
+                const surplus = Math.max(0, minutesToday - dailyTarget);
+                if (surplus <= 0) return;
+
+                task.carryoverMinutes = (Number(task.carryoverMinutes) || 0) + surplus;
+            });
+
+            // Persist
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            try { console.debug('[CarryOver] distributed for', contextName); } catch (e) {}
+        }
+
+        /**
          * Génère le message de progression pour une tâche récurrente.
          * LOGIQUE: On compare avec les jours PASSÉS uniquement (currentDay - 1).
          * Le jour en cours, on a encore le temps de le faire !
@@ -4191,6 +4364,40 @@ APPROCHE DE DÉVELOPPEMENT :
                 <div style="margin-top: 6px; padding: 6px 8px; background: #64748b15; border-left: 3px solid #64748b; border-radius: 4px; font-size: 11px;">
                     <strong>Info</strong><br>
                     <span style="color: #666;">Mode one-shot: pas de suivi journalier</span>
+                </div>
+            `;
+            }
+
+            // Support pour tâches planifiées sans durée (scheduleDays)
+            if (Array.isArray(task.scheduleDays) && task.scheduleDays.length > 0) {
+                const now = new Date();
+                const today = now.getDay(); // 0..6 (0 = dimanche)
+                const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+                const label = task.scheduleDays.map(d => dayNames[d]).join(', ');
+
+                if (!task.scheduleDays.includes(today)) {
+                    return `
+                <div style="margin-top: 6px; padding: 6px 8px; background: #f3f4f615; border-left: 3px solid #f3f4f6; border-radius: 4px; font-size: 11px;">
+                    <strong>ℹ️ Non prévu aujourd'hui</strong><br>
+                    <span style="color: #666;">Planifié: ${label}</span>
+                </div>
+            `;
+                }
+
+                const completedToday = isTaskCompletedNow(task);
+                if (completedToday) {
+                    return `
+                <div style="margin-top: 6px; padding: 6px 8px; background: #22c55e15; border-left: 3px solid #22c55e; border-radius: 4px; font-size: 11px;">
+                    <strong>✅ Objectif du jour atteint • ⭐</strong><br>
+                    <span style="color: #666;">Planifié: ${label}</span>
+                </div>
+            `;
+                }
+
+                return `
+                <div style="margin-top: 6px; padding: 6px 8px; background: #fef3c715; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 11px;">
+                    <strong>🔔 À faire aujourd'hui</strong><br>
+                    <span style="color: #666;">Planifié: ${label}</span>
                 </div>
             `;
             }
@@ -4391,51 +4598,73 @@ APPROCHE DE DÉVELOPPEMENT :
          *    - Consommée même si objectif déjà atteint (0m ajoutés)
          */
         function applyGrace() {
-            if (!graceEnabled || gracesUsedThisWeek >= 1) return;
+            if (!graceEnabled) { showToast('warning', 'La Grâce est désactivée'); return; }
+            if (gracesUsedThisWeek >= 1) { showToast('warning', 'La Grâce a déjà été utilisée cette semaine'); return; }
 
             checkAndResetGraceWeekly();
-            if (gracesUsedThisWeek >= 1) return;
-
-            if (contexts.length === 0) return;
+            if (gracesUsedThisWeek >= 1) { showToast('warning', 'La Grâce a déjà été utilisée cette semaine'); return; }
 
             const now = new Date();
             const todayKey = getLocalDateString(now);
-            const todayStart = now.getTime() - (now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()) * 1000;
-            const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+            const timestamp = now.getTime();
 
-            // Calculer le focus pour le premier contexte SEULEMENT (exactement comme calculateDailyStats le fait)
-            const mainCtx = contexts[0];
-            const sessionsThisDay = sessionHistory.filter(session => {
-                const sTs = getHistorySessionTimestamp(session);
-                return sTs >= todayStart && sTs < todayEnd && 
-                       (session.contextName === mainCtx.name || session.context === mainCtx.name) &&
-                       (session.phase === 'work' || !session.phase) &&
-                       isSessionAfterRegularityReset(session);
-            });
-            const todayFocusMinutes = sessionsThisDay.reduce((sum, s) => sum + getHistorySessionMinutes(s), 0);
-
-            const weeklyTarget = calculateWeeklyFocusTarget();
-            const dailyTarget = Math.ceil(weeklyTarget / 7);
-            const minutesToAdd = Math.max(0, dailyTarget - todayFocusMinutes);
-
-            if (minutesToAdd > 0) {
-                // Ajouter au total de focus du contexte
-                mainCtx.totalFocusSeconds += minutesToAdd * 60;
-                localStorage.setItem('contexts', JSON.stringify(contexts));
-
-                // Ajouter une session à l'historique pour que le score semaine compte
-                // IMPORTANT: utiliser le même format que calculateDailyStats attend
-                sessionHistory.push({
-                    id: Date.now(),
-                    contextName: mainCtx.name,
-                    startTime: todayKey,
-                    timestamp: now.getTime(),
-                    duration: minutesToAdd,
-                    durationMinutes: minutesToAdd,
-                    phase: 'work'
-                });
-                localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
+            // Récupérer toutes les tâches journalières
+            const dailyTasks = tasks.filter(t => t.recurrence === 'daily');
+            if (!dailyTasks.length) {
+                // Même si aucune tâche, consommer la grâce
+                gracesUsedThisWeek = 1;
+                localStorage.setItem('gracesUsedThisWeek', '1');
+                return;
             }
+
+            // Grouper les tâches journalières par contexte lié (nom de contexte exact, insensible casse)
+            const tasksByContext = {};
+            dailyTasks.forEach(t => {
+                const taskName = String(t.name || '').trim();
+                const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === taskName.toLowerCase());
+                if (matchedContext) {
+                    const key = String(matchedContext.name);
+                    tasksByContext[key] = tasksByContext[key] || [];
+                    tasksByContext[key].push(t);
+                } else {
+                    // Pas de contexte lié : on marque la tâche comme complétée pour aujourd'hui
+                    t.completedAt = timestamp;
+                }
+            });
+
+            // Pour chaque contexte lié, calculer le total de minutes nécessaires pour satisfaire toutes les tâches journalières
+            Object.keys(tasksByContext).forEach(ctxName => {
+                const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(ctxName || '').trim().toLowerCase());
+                if (!matchedContext) return;
+
+                const minutesToday = getContextTimeInLastNDays({}, matchedContext, 1);
+
+                // Somme des besoins pour chaque tâche relative au minutesToday initial
+                const totalNeeded = tasksByContext[ctxName].reduce((sum, t) => {
+                    const need = Math.max(0, (Number(t.dedicatedMinutes) || 0) - minutesToday);
+                    return sum + need;
+                }, 0);
+
+                if (totalNeeded > 0) {
+                    // Appliquer une session unique cumulée pour ce contexte
+                    matchedContext.totalFocusSeconds = (Number(matchedContext.totalFocusSeconds) || 0) + totalNeeded * 60;
+                    sessionHistory.push({
+                        id: Date.now() + Math.floor(Math.random() * 1000),
+                        contextName: matchedContext.name,
+                        startTime: todayKey,
+                        timestamp,
+                        duration: totalNeeded,
+                        durationMinutes: totalNeeded,
+                        phase: 'work'
+                    });
+                    try { distributeCarryoverForContext(matchedContext.name); } catch (e) {}
+                }
+            });
+
+            // Persist changes (tâches, contextes, sessions)
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('contexts', JSON.stringify(contexts));
+            localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
 
             gracesUsedThisWeek = 1;
             localStorage.setItem('gracesUsedThisWeek', '1');
@@ -4448,6 +4677,7 @@ APPROCHE DE DÉVELOPPEMENT :
             localStorage.setItem('graceEnabled', String(graceEnabled));
             renderInsights();
         }
+        
         
         /**
          * Sauvegarde tous les contextes dans le localStorage
@@ -4918,6 +5148,7 @@ APPROCHE DE DÉVELOPPEMENT :
             });
 
             localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
+            try { distributeCarryoverForContext(context.name); } catch (e) {}
             regularityResetBaseline[String(context.id)] = 0;
             localStorage.setItem('regularityResetBaseline', JSON.stringify(regularityResetBaseline));
         }
@@ -4984,6 +5215,8 @@ APPROCHE DE DÉVELOPPEMENT :
                         phase: 'work'
                     });
                     localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
+                    // Distribuer le surplus éventuel vers carryoverMinutes des tâches liées
+                    try { distributeCarryoverForContext(context.name); } catch (e) {}
                     
                     // Pause longue tous les 3 pomodoros
                     const isLongBreak = context.completedPomodoros % 3 === 0;
@@ -5551,8 +5784,20 @@ APPROCHE DE DÉVELOPPEMENT :
                 return;
             }
 
-            if (!dedicatedMinutes || dedicatedMinutes <= 0) {
-                alert('Veuillez entrer un temps valide (en minutes)');
+            // Si pas de minutes renseignées (ou <= 0), ouvrir le modal de planification hebdomadaire
+            if (!Number.isFinite(dedicatedMinutes) || dedicatedMinutes <= 0) {
+                // Préparer une tâche en attente et ouvrir le modal pour sélectionner les jours
+                pendingScheduledTask = {
+                    id: Date.now(),
+                    name,
+                    dedicatedMinutes: 0,
+                    completed: false,
+                    recurrence: 'weekly',
+                    completedAt: 0,
+                    createdAt: Date.now(),
+                    deadline: deadline || null
+                };
+                openScheduleModal();
                 return;
             }
 
@@ -5622,12 +5867,16 @@ APPROCHE DE DÉVELOPPEMENT :
                 if (task.recurrence === 'one-shot') {
                     task.completed = !task.completed;
                 } else {
+                    // For scheduled non-temporal tasks, set completedAt for today only
                     task.completedAt = currentlyCompleted ? 0 : Date.now();
                 }
 
                 localStorage.setItem('tasks', JSON.stringify(tasks));
+                try { console.debug('[Goal] toggleTask', { id, recurrence: task.recurrence, currentlyCompleted, newCompletedAt: task.completedAt }); } catch (e) {}
                 renderChecklist();
                 renderInsights();
+                // Vérifier si on a gagné une étoile aujourd'hui
+                try { evaluateDailyStarsForToday(); } catch (e) {}
             }
         }
 
@@ -5725,12 +5974,10 @@ APPROCHE DE DÉVELOPPEMENT :
             if (totalFocusSeconds >= dedicatedSeconds && !taskNotificationShown[taskKey]) {
                 taskNotificationShown[taskKey] = true;
                 playTaskCompleteSound();
-                
-                setTimeout(() => {
-                    if (confirm(`✅ Temps dédié atteint pour "${matchingTask.name}" (${matchingTask.dedicatedMinutes} min)!\n\nMarquer cette tâche comme terminée ?`)) {
-                        toggleTask(matchingTask.id);
-                    }
-                }, 600);
+                // Nouvelle logique : ne plus afficher la popup ni auto-cocher.
+                // On laisse l'utilisateur marquer manuellement la tâche. On affiche simplement
+                // une notification discrète (toast) pour l'informer.
+                showToast(`✅ Temps dédié atteint pour "${matchingTask.name}" (${matchingTask.dedicatedMinutes} min) — cochez-la manuellement si souhaité.`, 'info');
             }
         }
         
@@ -5741,21 +5988,24 @@ APPROCHE DE DÉVELOPPEMENT :
             const container = document.getElementById('checklistContent');
             if (!container) return;
             
-            // Suppression automatique des tâches expirées (deadline dépassée)
+            // Marquer les tâches expirées (deadline dépassée) au lieu de les supprimer
+            // Cela permet de conserver leur cible hebdomadaire (comme échec) dans le calcul
             const now = Date.now();
-            let filteredTasks = tasks.filter(task => {
+            let markChanged = false;
+            tasks.forEach(task => {
                 if (task.deadline) {
                     const deadlineTs = typeof task.deadline === 'string' ? Date.parse(task.deadline) : task.deadline;
                     if (Number.isFinite(deadlineTs) && now > deadlineTs) {
-                        // Supprimer la tâche expirée
-                        return false;
+                        if (!task.expired) {
+                            task.expired = true;
+                            task.completed = false;
+                            markChanged = true;
+                        }
                     }
                 }
-                return true;
             });
-            if (filteredTasks.length !== tasks.length) {
-                localStorage.setItem('tasks', JSON.stringify(filteredTasks));
-                tasks = filteredTasks;
+            if (markChanged) {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
             }
             // Tri : tâches avec deadline la plus proche en haut, puis tâches sans deadline, puis complétées en bas
             const sortedTasks = tasks.slice().sort((a, b) => {
@@ -5776,6 +6026,9 @@ APPROCHE DE DÉVELOPPEMENT :
                     );
                     const isMatching = matchingContext !== undefined;
                     const completedNow = isTaskCompletedNow(task);
+                    const scheduleLabel = (Array.isArray(task.scheduleDays) && task.scheduleDays.length > 0)
+                        ? `Planifié: ${task.scheduleDays.map(d => ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d]).join(', ')}`
+                        : '';
                     // Affichage deadline et barre de progression
                     let deadlineHtml = '';
                     if (task.deadline) {
@@ -5798,17 +6051,19 @@ APPROCHE DE DÉVELOPPEMENT :
                         }
                     }
                     return `
-                        <div class="task-item ${completedNow ? 'completed' : ''}">
+                        <div class="task-item ${completedNow ? 'completed' : ''} ${task.expired ? 'expired' : ''}">
                             <input type="checkbox" 
                                    class="task-checkbox" 
                                    ${completedNow ? 'checked' : ''} 
+                                   ${task.expired ? 'disabled' : ''}
                                    onchange="toggleTask(${task.id})" />
                             <div class="task-info">
                                 <div class="task-name">
                                     ${escapeHtml(task.name)}
                                     ${isMatching ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : ''}
+                                    ${task.expired ? '<span class="task-expired-indicator" style="color:#d44646;margin-left:8px;font-size:11px;">EXPIRÉE</span>' : ''}
                                 </div>
-                                <div class="task-time">⏱️ ${task.dedicatedMinutes} min • ${getRecurrenceLabel(task.recurrence)}</div>
+                                <div class="task-time">${scheduleLabel ? '📅 ' + scheduleLabel : '⏱️ ' + task.dedicatedMinutes + ' min • ' + getRecurrenceLabel(task.recurrence)}</div>
                                 ${deadlineHtml}
                                 <div style="margin-top: 6px;">
                                     <select onchange="setTaskRecurrence(${task.id}, this.value)" style="font-size: 11px; padding: 3px 5px; border: 1px solid #ddd; border-radius: 4px;">
@@ -5873,6 +6128,8 @@ APPROCHE DE DÉVELOPPEMENT :
                     }
                 });
             }
+
+            // Fin de renderChecklist
         }
         
         /*
@@ -7232,8 +7489,21 @@ APPROCHE DE DÉVELOPPEMENT :
                                           yearlyGoals.filter(g => isManualGoalCompletedNow(g, 'yearly')).length;
             const manualGoalsTotal = dailyGoals.length + weeklyGoals.length + monthlyGoals.length + yearlyGoals.length;
             
-            const completedTasks = tasks.filter(t => isTaskCompletedNow(t)).length + manualGoalsCompleted;
-            const totalTasks = tasks.length + manualGoalsTotal;
+            // Exclure les tâches marquées 'expired' : elles ne comptent plus dans les objectifs
+            // Pour les tâches "sans temporalité" planifiées (`scheduleDays`), ne compter
+            // que celles qui sont prévues aujourd'hui. Ex: si une tâche n'est pas cochée
+            // pour aujourd'hui, elle est soustraite du total et du comptage complété.
+            const todayWeekday = new Date().getDay(); // 0=Dimanche .. 6=Samedi
+            const activeTasks = tasks.filter(t => {
+                if (t.expired) return false;
+                if (Array.isArray(t.scheduleDays) && t.scheduleDays.length > 0) {
+                    // inclure uniquement si prévue aujourd'hui
+                    return t.scheduleDays.includes(todayWeekday);
+                }
+                return true;
+            });
+            const completedTasks = activeTasks.filter(t => isTaskCompletedNow(t)).length + manualGoalsCompleted;
+            const totalTasks = activeTasks.length + manualGoalsTotal;
             const tasksPercentage = totalTasks > 0 ? Math.round((completedTasks/totalTasks)*100) : 0;
             const encouragementMessage = getTasksEncouragementMessage(tasksPercentage);
             const taskObjectives = getTaskObjectives();
@@ -7254,6 +7524,11 @@ APPROCHE DE DÉVELOPPEMENT :
             const learnedWordsThisWeek = dictionary.filter(word =>
                 word.level === 'green' && Number.isFinite(word.greenAt) && word.greenAt >= weekStartTs
             ).length;
+            // Stars this week: count entries in dailyStars within current week
+            const starsThisWeek = (dailyStars || []).filter(d => {
+                const ts = Date.parse(d + 'T00:00:00');
+                return Number.isFinite(ts) && ts >= weekStartTs;
+            }).length;
             const totalGreenWords = dictionary.filter(word => word.level === 'green').length;
             const totalOrangeWords = dictionary.filter(word => word.level === 'orange').length;
             const totalRedWords = dictionary.filter(word => word.level === 'red').length;
@@ -7266,12 +7541,49 @@ APPROCHE DE DÉVELOPPEMENT :
                 ? Math.min(100, Math.round((weekFocusMinutes / weeklyFocusTarget) * 100))
                 : 0;
             
-            // Pour le score hebdomadaire, on combine les objectifs journaliers ET hebdomadaires
-            // (les objectifs mensuels/annuels ont leur propre horizon)
-            const weeklyTasksTotal = dailyObjectives.total + weeklyObjectives.total;
-            const weeklyTasksCompleted = dailyObjectives.completed + weeklyObjectives.completed;
-            const tasksWeekPct = weeklyTasksTotal > 0
-                ? Math.round((weeklyTasksCompleted / weeklyTasksTotal) * 100)
+            // Pour le score hebdomadaire, calculer en minutes équivalentes par semaine
+            // - Pour les tâches récurrentes (daily/weekly/monthly/yearly) :
+            //     weeklyTargetMinutes = totalTargetMinutes * (7 / periodDays)
+            //     weeklyCompletedMinutes = min(weeklyTargetMinutes, actualMinutes * (7 / periodDays))
+            // - Pour les one-shot : compter une seule fois (target = totalTargetMinutes)
+            let weeklyTasksTargetMinutes = 0;
+            let weeklyTasksCompletedMinutes = 0;
+            // Inclure les objectifs manuels dans le calcul hebdomadaire en leur donnant un poids (minutes équivalentes)
+            // Choix: chaque objectif manuel vaut 60 minutes par semaine (configurable si besoin).
+            const manualGoalWeight = 60;
+            // Debug details per task for weekly score calculation
+            try { console.debug('[WeeklyScore] taskObjectives count', taskObjectives.length); } catch (e) {}
+            taskObjectives.forEach(t => {
+                const periodDays = Number(t.periodDays) || 1;
+                const totalTarget = Number(t.totalTargetMinutes) || 0;
+                // calcule les minutes réelles sur les 7 derniers jours pour cette tâche
+                const matchingContext = contexts.find(c => (String(c.name || '').trim().toLowerCase()) === String(t.name || '').trim().toLowerCase());
+                const weeklyActualMinutes = matchingContext ? getContextTimeInLastNDays({}, matchingContext, 7) : 0;
+                if (t.recurrence === 'one-shot') {
+                    weeklyTasksTargetMinutes += totalTarget;
+                    const completed = isTaskCompletedForRecurrence(tasks.find(tsk => tsk.id === t.id) || {}, 'one-shot');
+                    if (completed) weeklyTasksCompletedMinutes += totalTarget;
+                    try { console.debug('[WeeklyScore] one-shot', { id: t.id, name: t.name, totalTarget, completed, weeklyActualMinutes }); } catch (e) {}
+                } else {
+                    const weeklyTarget = totalTarget * (7 / periodDays);
+                    const weeklyCompleted = Math.min(weeklyTarget, weeklyActualMinutes);
+                    weeklyTasksTargetMinutes += weeklyTarget;
+                    weeklyTasksCompletedMinutes += weeklyCompleted;
+                    try { console.debug('[WeeklyScore] recurrent', { id: t.id, name: t.name, recurrence: t.recurrence, totalTarget, weeklyActualMinutes, weeklyTarget, weeklyCompleted, progressPct: t.progressPct }); } catch (e) {}
+                }
+            });
+            // ajouter les objectifs manuels
+            try {
+                const manualGoalsTotal = (dailyGoals.length + weeklyGoals.length + monthlyGoals.length + yearlyGoals.length) || 0;
+                const manualGoalsCompleted = (dailyGoals.filter(g => isManualGoalCompletedNow(g, 'daily')).length + weeklyGoals.filter(g => isManualGoalCompletedNow(g, 'weekly')).length + monthlyGoals.filter(g => isManualGoalCompletedNow(g, 'monthly')).length + yearlyGoals.filter(g => isManualGoalCompletedNow(g, 'yearly')).length) || 0;
+                weeklyTasksTargetMinutes += manualGoalsTotal * manualGoalWeight;
+                weeklyTasksCompletedMinutes += manualGoalsCompleted * manualGoalWeight;
+                console.debug('[WeeklyScore] manualGoals', { manualGoalsTotal, manualGoalsCompleted, manualGoalWeight });
+                console.debug('[WeeklyScore] totals', { weeklyTasksTargetMinutes, weeklyTasksCompletedMinutes });
+            } catch (e) {}
+
+            const tasksWeekPct = weeklyTasksTargetMinutes > 0
+                ? Math.round((weeklyTasksCompletedMinutes / weeklyTasksTargetMinutes) * 100)
                 : 0;
             
             const vocabWeekPct = Math.min(100, Math.round((learnedWordsThisWeek / weeklyVocabTarget) * 100));
@@ -7313,6 +7625,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 tasksWeekPct,
                 vocabWeekPct,
                 weeklyScore,
+                starsThisWeek,
                 dailyObjectives,
                 weeklyObjectives,
                 monthlyObjectives,
@@ -7328,6 +7641,10 @@ APPROCHE DE DÉVELOPPEMENT :
             let totalMinutesPerWeek = 0;
             
             tasks.forEach(task => {
+                // Ignorer les tâches expirées : elles ne contribuent plus au quota hebdo
+                if (task.expired) return;
+                // Ignorer les tâches sans durée (scheduleDays) pour le calcul hebdo
+                if (Number(task.dedicatedMinutes) <= 0 || (Array.isArray(task.scheduleDays) && task.scheduleDays.length > 0)) return;
                 const dedicatedMinutes = Math.max(0, Number(task.dedicatedMinutes) || 0);
                 
                 switch (task.recurrence) {
@@ -7356,7 +7673,10 @@ APPROCHE DE DÉVELOPPEMENT :
          * @returns {Array<Object>}
          */
         function getTaskObjectives() {
-            return tasks.map(task => {
+            // Exclure les tâches sans durée (scheduleDays ou dedicatedMinutes <= 0)
+            return tasks
+                .filter(task => !task.expired && Number(task.dedicatedMinutes) > 0 && (!Array.isArray(task.scheduleDays) || task.scheduleDays.length === 0))
+                .map(task => {
                 const recurrence = task.recurrence || 'one-shot';
                 const periodDays = getPeriodDays(recurrence);
                 const totalTargetMinutes = Math.max(1, (Number(task.dedicatedMinutes) || 0) * periodDays);
@@ -7369,11 +7689,11 @@ APPROCHE DE DÉVELOPPEMENT :
                 const actualMinutes = Math.max(0, Math.round(actualMinutesRaw));
                 const progressPct = Math.min(100, Math.round((actualMinutes / totalTargetMinutes) * 100));
 
-                // Pour les tâches récurrentes, la complétion est basée UNIQUEMENT sur le temps accumulé
-                // Pour les tâches one-shot, on accepte aussi la coche manuelle
-                const isCompleted = recurrence === 'one-shot'
-                    ? (progressPct >= 100 || isTaskCompletedNow(task))
-                    : progressPct >= 100;
+                // La complétion d'une tâche est vraie si sa progression temporelle atteint la cible.
+                // La coche manuelle (popup) doit uniquement marquer la tâche pour la période "daily"
+                // (coche journalière temporaire), ou pour les tâches one-shot.
+                const manualMarkedDaily = isTaskCompletedForRecurrence(task, 'daily');
+                const isCompleted = (progressPct >= 100) || (recurrence === 'daily' && manualMarkedDaily) || (recurrence === 'one-shot' && isTaskCompletedForRecurrence(task, 'one-shot'));
 
                 // Propager deadline et createdAt pour l'affichage dans Insights
                 return {
@@ -7402,10 +7722,13 @@ APPROCHE DE DÉVELOPPEMENT :
             const manualGoals = getManualGoalsCollection(period);
             const autoGoals = taskObjectives.filter(g => g.recurrence === period);
 
+            // Debug: tracer les collections et le calcul
+            try { console.debug('[Objectives] calculateObjectiveBucket', { period, manualGoals: manualGoals.length, autoGoals: autoGoals.length }); } catch (e) {}
+
             const manualCompleted = manualGoals.filter(g => isManualGoalCompletedNow(g, period)).length;
             const autoCompleted = autoGoals.filter(g => g.completed).length;
 
-            return {
+            const result = {
                 period,
                 total: manualGoals.length + autoGoals.length,
                 completed: manualCompleted + autoCompleted,
@@ -7414,6 +7737,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 autoTotal: autoGoals.length,
                 autoCompleted
             };
+            try { console.debug('[Objectives] bucketResult', result); } catch (e) {}
+            return result;
         }
         
         function renderInsights() {
@@ -7431,7 +7756,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 const stats = calculateStats();
                 checkAndResetGraceWeekly();
                 const graceButtonHtml = graceEnabled ? `
-                    <button class="reset-stats-btn" onclick="applyGrace()" style="background: ${gracesUsedThisWeek >= 1 ? '#d0d0d0' : '#ffd580'}; color: ${gracesUsedThisWeek >= 1 ? '#888' : '#333'}; cursor: ${gracesUsedThisWeek >= 1 ? 'not-allowed' : 'pointer'};" ${gracesUsedThisWeek >= 1 ? 'disabled' : ''}>🎪 Grâce – ${gracesUsedThisWeek >= 1 ? 'Utilisé cette semaine' : 'Disponible (1/1)'}</button>
+                    <button id="applyGraceBtn" class="reset-stats-btn" onclick="applyGrace()" style="background: ${gracesUsedThisWeek >= 1 ? '#d0d0d0' : '#ffd580'}; color: ${gracesUsedThisWeek >= 1 ? '#888' : '#333'}; cursor: ${gracesUsedThisWeek >= 1 ? 'not-allowed' : 'pointer'};" ${gracesUsedThisWeek >= 1 ? 'disabled' : ''}>🎪 Grâce – ${gracesUsedThisWeek >= 1 ? 'Utilisé cette semaine' : 'Disponible (1/1)'}</button>
                 ` : '';
                 
                 // Définition des cartes de statistiques
@@ -7499,12 +7824,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     if (card) {
                         cardsHtml += `
                             <div class="stat-card" 
-                                 draggable="true" 
                                  data-card-id="${cardId}"
-                                 ondragstart="handleStatCardDragStart(event)"
-                                 ondragover="handleStatCardDragOver(event)"
-                                 ondrop="handleStatCardDrop(event)"
-                                 ondragend="handleStatCardDragEnd(event)"
                                  style="background: ${card.gradient}; cursor: grab;">
                                 <div class="stat-label">${card.label}</div>
                                 <div class="stat-value">${card.value}</div>
@@ -7513,17 +7833,28 @@ APPROCHE DE DÉVELOPPEMENT :
                         `;
                     }
                 });
-                
+
                 container.innerHTML = `
                     ${graceButtonHtml}
                     <div style="margin: 4px 0 12px; padding: 8px 12px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; border-radius: 4px; font-size: 11px; color: #555;">
                         💡 <strong>Astuce :</strong> Glissez-déposez les cartes pour les réorganiser selon vos préférences
                     </div>
+
                     ${cardsHtml}
                     <div style="margin-top: 16px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
                         <button class="reset-stats-btn" onclick="resetStats()">🔄 Réinitialiser les statistiques</button>
                     </div>
                 `;
+
+                // Attacher proprement les écouteurs DnD aux cartes après insertion
+                // (évite les problèmes d'attributs inline et garantit event.currentTarget)
+                container.querySelectorAll('.stat-card').forEach(cardEl => {
+                    cardEl.setAttribute('draggable', 'true');
+                    cardEl.addEventListener('dragstart', handleStatCardDragStart);
+                    cardEl.addEventListener('dragover', handleStatCardDragOver);
+                    cardEl.addEventListener('drop', handleStatCardDrop);
+                    cardEl.addEventListener('dragend', handleStatCardDragEnd);
+                });
             } else if (insightsActiveTab === 'regularity') {
                 renderRegularityChart(container);
             } else if (insightsActiveTab === 'goals') {
@@ -7738,6 +8069,7 @@ APPROCHE DE DÉVELOPPEMENT :
             goal.completed = !goal.completed;
             goal.completedAt = goal.completed ? Date.now() : 0;
             saveManualGoalsCollection(period);
+            try { console.debug('[Goal] toggleManualGoal', { period, id, completed: goal.completed, completedAt: goal.completedAt }); } catch (e) {}
             renderInsights();
         }
 
@@ -8085,6 +8417,79 @@ APPROCHE DE DÉVELOPPEMENT :
             }
         }
 
+        // Schedule modal helpers
+        function openScheduleModal() {
+            const modal = document.getElementById('scheduleModal');
+            if (!modal) return;
+            // reset checkboxes
+            modal.querySelectorAll('input[type=checkbox][data-day]').forEach(cb => cb.checked = false);
+            modal.style.display = '';
+        }
+
+        function closeScheduleModal() {
+            const modal = document.getElementById('scheduleModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+        }
+
+        function handleScheduleOverlayClick(e) {
+            if (e.target && e.target.id === 'scheduleModal') closeScheduleModal();
+        }
+
+        function cancelScheduleModal() {
+            pendingScheduledTask = null;
+            closeScheduleModal();
+        }
+
+        function confirmScheduledTask() {
+            if (!pendingScheduledTask) return;
+            const modal = document.getElementById('scheduleModal');
+            if (!modal) return;
+            const days = Array.from(modal.querySelectorAll('input[type=checkbox][data-day]'))
+                .filter(cb => cb.checked)
+                .map(cb => Number(cb.getAttribute('data-day')));
+            // If no days selected, assume every weekday (Mon-Fri)
+            const scheduleDays = days.length > 0 ? days : [1,2,3,4,5];
+            const task = {
+                ...pendingScheduledTask,
+                scheduleDays,
+                // Keep recurrence weekly for scheduled tasks
+                recurrence: 'weekly',
+                deadline: pendingScheduledTask.deadline || null
+            };
+            tasks.push(normalizeTask(task));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            pendingScheduledTask = null;
+            closeScheduleModal();
+            renderChecklist();
+            renderInsights();
+            try { evaluateDailyStarsForToday(); } catch (e) {}
+        }
+
+        /**
+         * Vérifie si toutes les tâches planifiées prévues aujourd'hui sont complétées.
+         * Si oui et que la date n'est pas encore dans `dailyStars`, l'ajoute.
+         */
+        function evaluateDailyStarsForToday() {
+            try {
+                const now = new Date();
+                const todayKey = getLocalDateString(now);
+                const todayDay = now.getDay(); // 0..6
+                const scheduledToday = tasks.filter(t => Array.isArray(t.scheduleDays) && t.scheduleDays.includes(todayDay));
+                if (scheduledToday.length === 0) return;
+                const allDone = scheduledToday.every(t => isTaskCompletedNow(t));
+                if (!allDone) return;
+                if (!Array.isArray(dailyStars)) dailyStars = [];
+                if (dailyStars.includes(todayKey)) return; // déjà comptée
+                dailyStars.push(todayKey);
+                localStorage.setItem('dailyStars', JSON.stringify(dailyStars));
+                showToast('success', `⭐ Étoile gagnée pour ${todayKey}`);
+                renderInsights();
+            } catch (e) {
+                console.debug('[Stars] evaluate error', e);
+            }
+        }
+
         /**
          * Ferme le menu Actions
          */
@@ -8133,6 +8538,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 }
 
                 localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
+                try { distributeCarryoverForContext(currentSessionContext); } catch (e) {}
             }
 
             currentSessionContext = null;
@@ -8426,14 +8832,20 @@ APPROCHE DE DÉVELOPPEMENT :
         let draggedStatCard = null;
 
         function handleStatCardDragStart(event) {
+            if (event.stopPropagation) event.stopPropagation();
             draggedStatCard = event.currentTarget;
             event.currentTarget.style.opacity = '0.5';
             event.currentTarget.style.cursor = 'grabbing';
             event.dataTransfer.effectAllowed = 'move';
+            // expose the card id as plain text to help debugging / interop
+            const id = event.currentTarget.getAttribute('data-card-id') || '';
+            try { event.dataTransfer.setData('text/plain', id); } catch (e) { /* some browsers restrict types */ }
             event.dataTransfer.setData('text/html', event.currentTarget.innerHTML);
+            try { console.debug('[DnD] dragstart', { id }); } catch (e) {}
         }
 
         function handleStatCardDragOver(event) {
+            if (event.stopPropagation) event.stopPropagation();
             if (event.preventDefault) {
                 event.preventDefault();
             }
@@ -8442,13 +8854,21 @@ APPROCHE DE DÉVELOPPEMENT :
         }
 
         function handleStatCardDrop(event) {
-            if (event.stopPropagation) {
-                event.stopPropagation();
+            if (event.stopPropagation) event.stopPropagation();
+            if (event.preventDefault) {
+                event.preventDefault();
             }
             
-            if (draggedStatCard && draggedStatCard !== event.currentTarget) {
+            // Détermine correctement l'élément cible même si l'événement provient d'un enfant
+            const targetEl = (event.currentTarget && event.currentTarget.classList && event.currentTarget.classList.contains('stat-card'))
+                ? event.currentTarget
+                : (event.target && event.target.closest ? event.target.closest('.stat-card') : null);
+
+            if (draggedStatCard && targetEl && draggedStatCard !== targetEl) {
                 const draggedId = draggedStatCard.getAttribute('data-card-id');
-                const targetId = event.currentTarget.getAttribute('data-card-id');
+                const targetId = targetEl.getAttribute('data-card-id');
+                // Debug minimal
+                try { console.debug('[DnD] drop', { draggedId, targetId, order: statCardsOrder }); } catch (e) {}
                 
                 const draggedIndex = statCardsOrder.indexOf(draggedId);
                 const targetIndex = statCardsOrder.indexOf(targetId);
@@ -8470,6 +8890,7 @@ APPROCHE DE DÉVELOPPEMENT :
         }
 
         function handleStatCardDragEnd(event) {
+            if (event.stopPropagation) event.stopPropagation();
             event.currentTarget.style.opacity = '1';
             event.currentTarget.style.cursor = 'grab';
             draggedStatCard = null;
