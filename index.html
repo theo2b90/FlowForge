@@ -5352,8 +5352,8 @@ APPROCHE DE DÉVELOPPEMENT :
                     // Distribuer le surplus éventuel vers carryoverMinutes des tâches liées
                     try { distributeCarryoverForContext(context.name); } catch (e) {}
                     
-                    // Pause longue tous les 3 pomodoros
-                    const isLongBreak = context.completedPomodoros % 3 === 0;
+                    // Pause longue tous les 4 pomodoros
+                    const isLongBreak = context.completedPomodoros % 4 === 0;
                     context.remainingSeconds = isLongBreak ? context.longBreakSeconds : context.breakSeconds;
                 } else {
                     // Fin de la pause → travail
