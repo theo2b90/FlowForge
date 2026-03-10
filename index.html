@@ -2599,6 +2599,36 @@ APPROCHE DE DÉVELOPPEMENT :
             margin-bottom: 6px;
         }
 
+        /* Fix: dropdown Actions sur mobile (ne plus être rogné) */
+        @media (max-width: 600px) {
+            .actions-dropdown {
+                position: static !important;
+                top: auto !important;
+                right: auto !important;
+                left: auto !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                box-shadow: 0 12px 36px rgba(2,8,20,0.18) !important;
+                border-radius: 10px !important;
+                margin-top: 8px !important;
+                z-index: 99999 !important;
+                display: none; /* controlled by .show */
+            }
+
+            .actions-dropdown.show {
+                display: block !important;
+            }
+
+            .actions-dropdown button,
+            .actions-dropdown .speed-control {
+                padding: 12px 14px !important;
+            }
+
+            .actions-menu {
+                width: 100%;
+            }
+        }
+
         .session-duration {
             font-size: 12px;
             color: #0066cc;
@@ -2822,6 +2852,34 @@ APPROCHE DE DÉVELOPPEMENT :
     </style>
 </head>
 <body>
+    <style>
+        /* Overrides mobiles: centrer le dropdown Actions et montrer le select moteur */
+        @media (max-width: 600px) {
+            .actions-menu { position: relative; display: flex; justify-content: center; }
+            .actions-dropdown {
+                position: absolute !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                top: calc(100% + 8px) !important;
+                width: min(92%, 420px) !important;
+                min-width: 0 !important;
+                box-shadow: 0 12px 36px rgba(2,8,20,0.18) !important;
+                border-radius: 10px !important;
+                margin: 0 !important;
+                z-index: 99999 !important;
+                display: none; /* controlled by .show */
+            }
+            .actions-dropdown.show { display: block !important; }
+        }
+
+        @media (max-width: 480px) {
+            /* conserver le choix du moteur de recherche visible */
+            .dev-search-engine { display: inline-block !important; }
+            .dev-search-btn { display: inline-block !important; }
+            .dev-search-config { display: inline-block !important; }
+            .dev-search-input { min-width: 120px; }
+        }
+    </style>
     <div class="container">
         <div class="header">
             <div class="brand-block">
@@ -3203,6 +3261,33 @@ APPROCHE DE DÉVELOPPEMENT :
             </div>
         </div>
     </div>
+
+    <style>
+        /* Affinage header mobile : champ recherche compact qui s'étend au focus */
+        @media (max-width: 480px) {
+            .header { padding: 8px 10px; gap: 8px; }
+            .header h1 { font-size: 18px; }
+            .brand-subtitle { display: none; }
+            .actions-menu { order: 1; }
+            .brand-block { order: 2; }
+            .dev-search { order: 3; width: 100%; max-width: 100%; display: flex; align-items: center; gap: 6px; }
+            .dev-search-input {
+                width: 0;
+                padding: 0 4px;
+                opacity: 0;
+                transition: width 220ms ease, opacity 200ms ease, padding 200ms ease;
+                min-width: 0;
+            }
+            .dev-search:focus-within .dev-search-input {
+                width: calc(100% - 120px);
+                padding: 4px 8px;
+                opacity: 1;
+            }
+            .dev-search-engine { font-size: 12px; padding: 6px 8px; }
+            .dev-search-btn { padding: 6px 8px; font-size: 12px; }
+            .actions-menu .actions-menu-btn { padding: 8px 10px; font-size: 12px; }
+        }
+    </style>
 
     <script>
         /*
