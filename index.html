@@ -6202,15 +6202,7 @@ APPROCHE DE DÉVELOPPEMENT :
                                 </div>
                                 <div class="task-time">${scheduleLabel ? '📅 ' + scheduleLabel : '⏱️ ' + task.dedicatedMinutes + ' min • ' + getRecurrenceLabel(task.recurrence)}</div>
                                 ${deadlineHtml}
-                                <div style="margin-top: 6px;">
-                                    <select onchange="setTaskRecurrence(${task.id}, this.value)" style="font-size: 11px; padding: 3px 5px; border: 1px solid #ddd; border-radius: 4px;">
-                                        <option value="one-shot" ${task.recurrence === 'one-shot' ? 'selected' : ''}>One shot</option>
-                                        <option value="daily" ${task.recurrence === 'daily' ? 'selected' : ''}>Journalière</option>
-                                        <option value="weekly" ${task.recurrence === 'weekly' ? 'selected' : ''}>Hebdomadaire</option>
-                                        <option value="monthly" ${task.recurrence === 'monthly' ? 'selected' : ''}>Mensuelle</option>
-                                        <option value="yearly" ${task.recurrence === 'yearly' ? 'selected' : ''}>Annuelle</option>
-                                    </select>
-                                </div>
+                                <!-- Select de récurrence supprimé, l'info est déjà affichée plus haut -->
                                 ${getTaskProgressMessage(task, matchingContext)}
                             </div>
                             <div class="task-actions">
@@ -6226,13 +6218,15 @@ APPROCHE DE DÉVELOPPEMENT :
                 <div class="checklist-add">
                     <input type="text" id="taskNameInput" placeholder="Nom de la tâche" />
                     <input type="number" id="taskTimeInput" placeholder="Minutes/jour" min="1" />
-                    <select id="taskRecurrenceInput" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px;">
-                        <option value="one-shot">One shot</option>
-                        <option value="daily">Journalière</option>
-                        <option value="weekly">Hebdomadaire</option>
-                        <option value="monthly">Mensuelle</option>
-                        <option value="yearly">Annuelle</option>
-                    </select>
+                    <div id="recurrenceWrapper">
+                        <select id="taskRecurrenceInput" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-size: 12px;">
+                            <option value="one-shot">One shot</option>
+                            <option value="daily">Journalière</option>
+                            <option value="weekly">Hebdomadaire</option>
+                            <option value="monthly">Mensuelle</option>
+                            <option value="yearly">Annuelle</option>
+                        </select>
+                    </div>
                     <input type="date" id="taskDeadlineInput" placeholder="Date butoir (optionnelle)" style="margin-top:4px; font-size:12px; padding:7px; border-radius:4px; border:1px solid #ddd;" />
                     <button onclick="addTask()">+ Ajouter une tâche</button>
                 </div>
@@ -6265,6 +6259,8 @@ APPROCHE DE DÉVELOPPEMENT :
                     }
                 });
             }
+
+            // La récurrence reste toujours visible, même si une échéance est saisie
 
             // Fin de renderChecklist
         }
@@ -7815,8 +7811,23 @@ APPROCHE DE DÉVELOPPEMENT :
                 .filter(task => !task.expired && Number(task.dedicatedMinutes) > 0 && (!Array.isArray(task.scheduleDays) || task.scheduleDays.length === 0))
                 .map(task => {
                 const recurrence = task.recurrence || 'one-shot';
-                const periodDays = getPeriodDays(recurrence);
-                const totalTargetMinutes = Math.max(1, (Number(task.dedicatedMinutes) || 0) * periodDays);
+                let periodDays = getPeriodDays(recurrence);
+                let totalTargetMinutes;
+                // Si la tâche a une deadline, calculer le nombre de jours entre création et deadline
+                if (task.deadline) {
+                    const created = Number(task.createdAt || task.id || Date.now());
+                    const deadline = Number(task.deadline);
+                    if (Number.isFinite(created) && Number.isFinite(deadline) && deadline > created) {
+                        // Calcul du nombre de jours (arrondi supérieur)
+                        const msPerDay = 24 * 60 * 60 * 1000;
+                        periodDays = Math.ceil((deadline - created) / msPerDay);
+                        totalTargetMinutes = Math.max(1, (Number(task.dedicatedMinutes) || 0) * periodDays);
+                    } else {
+                        totalTargetMinutes = Math.max(1, (Number(task.dedicatedMinutes) || 0) * periodDays);
+                    }
+                } else {
+                    totalTargetMinutes = Math.max(1, (Number(task.dedicatedMinutes) || 0) * periodDays);
+                }
                 const matchingContext = contexts.find(c =>
                     c.name.toLowerCase().trim() === String(task.name || '').toLowerCase().trim()
                 );
