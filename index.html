@@ -2767,6 +2767,58 @@ APPROCHE DE DÉVELOPPEMENT :
                 grid-template-columns: 1fr;
             }
         }
+        /* ==================== HEADER: Améliorations responsive mobile ==================== */
+        .header {
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .brand-block {
+            flex: 0 0 auto;
+        }
+
+        .dev-search {
+            flex: 1 1 420px;
+            min-width: 0;
+            order: 2;
+            margin-top: 8px;
+        }
+
+        .dev-search-input {
+            min-width: 0;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .actions-menu {
+            order: 3;
+            flex: 0 0 auto;
+            margin-left: 8px;
+        }
+
+        .spacer {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .header h1 { font-size: 22px; }
+            .brand-subtitle { display: none; }
+            .dev-search { max-width: 100%; }
+            .dev-search-input { min-width: 160px; }
+            .actions-menu .actions-menu-btn { padding: 8px 10px; font-size: 12px; }
+            .header { padding: 10px; gap: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 { font-size: 18px; }
+            .dev-search { order: 3; width: 100%; margin-top: 8px; }
+            .dev-search { display: flex; gap: 8px; }
+            .dev-search-input { min-width: 0; flex: 1; }
+            .dev-search-engine, .dev-search-btn, .dev-search-config { display: none; }
+            .actions-menu { order: 1; margin-left: auto; }
+            .brand-block { order: 2; }
+            .header { align-items: center; }
+        }
     </style>
 </head>
 <body>
