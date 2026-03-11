@@ -2966,14 +2966,6 @@ APPROCHE DE DÉVELOPPEMENT :
                         <span>📤</span>
                         <span>Importer</span>
                     </button>
-                        <button onclick="exportToGoogleSheet(); closeActionsMenu()" title="Exporter la config vers Google Sheet">
-                            <span>🟢</span>
-                            <span>Exporter Google Sheet</span>
-                        </button>
-                        <button onclick="importFromGoogleSheet(); closeActionsMenu()" title="Importer la config depuis Google Sheet">
-                            <span>🟢</span>
-                            <span>Importer Google Sheet</span>
-                        </button>
                     <button onclick="handleFullReset(); closeActionsMenu()" title="Réinitialiser complètement l'application">
                         <span>♻️</span>
                         <span>Réinitialiser</span>
@@ -6790,68 +6782,6 @@ APPROCHE DE DÉVELOPPEMENT :
 
             reader.readAsText(file);
         }
-    // === GOOGLE SHEET SYNC ===
-    let googleSheetApiUrl = localStorage.getItem('googleSheetApiUrl') || '';
-
-    function promptGoogleSheetApiUrl() {
-        let url = prompt('URL de votre Web Apps Google Sheet (ex: https://script.google.com/macros/s/.../exec):', googleSheetApiUrl);
-        if (url) {
-            googleSheetApiUrl = url.trim();
-            localStorage.setItem('googleSheetApiUrl', googleSheetApiUrl);
-            showToast('success', 'URL Google Sheet enregistrée');
-        }
-        return googleSheetApiUrl;
-    }
-
-    function exportToGoogleSheet() {
-        if (!googleSheetApiUrl) {
-            if (!promptGoogleSheetApiUrl()) return;
-        }
-        // Récupère la config complète
-        const allData = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            allData[key] = localStorage.getItem(key);
-        }
-        const jsonStr = JSON.stringify({__flowforge_full_backup: true, data: allData}, null, 2);
-        fetch(googleSheetApiUrl, {
-    method: 'POST',
-    body: jsonStr // PAS de headers !
-})
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                showToast('success', '✅ Config exportée sur Google Sheet');
-            } else {
-                showToast('error', '❌ Erreur export Google Sheet', res.error || '');
-            }
-        })
-        .catch(err => {
-            showToast('error', '❌ Erreur export Google Sheet', err.message);
-        });
-    }
-
-    function importFromGoogleSheet() {
-        if (!googleSheetApiUrl) {
-            if (!promptGoogleSheetApiUrl()) return;
-        }
-        fetch(googleSheetApiUrl)
-        .then(r => r.json())
-        .then(res => {
-            if (res && res.__flowforge_full_backup && res.data) {
-                Object.keys(res.data).forEach(key => {
-                    localStorage.setItem(key, res.data[key]);
-                });
-                showToast('success', '✅ Config importée depuis Google Sheet');
-                location.reload();
-            } else {
-                showToast('error', '❌ Erreur import Google Sheet', 'Format inattendu');
-            }
-        })
-        .catch(err => {
-            showToast('error', '❌ Erreur import Google Sheet', err.message);
-        });
-    }
         
         // ==================== FONCTIONS NOTES ====================
         
