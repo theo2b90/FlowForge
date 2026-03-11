@@ -1,4 +1,9 @@
+
 <!DOCTYPE html>
+<script>
+    // Supprime le flag d'import auto à chaque chargement de page
+    sessionStorage.removeItem('firebaseImported');
+</script>
 <!--
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║                                                                            ║
@@ -3417,22 +3422,86 @@ APPROCHE DE DÉVELOPPEMENT :
     }
 
 
+
     firebase.auth().onAuthStateChanged(function(user) {
         currentUser = user;
         updateAuthUI();
         handleAutoSyncAuthChange();
+        // Import auto uniquement lors d'une nouvelle connexion
+        if (currentUser && !wasConnected) {
+            wasConnected = true;
+            const saved = localStorage.getItem('autoSyncFirebaseEnabled') === 'true';
+            if (saved) {
+                importDataFromFirebase();
+            }
+        }
+        if (!currentUser) {
+            wasConnected = false;
+        }
     });
 
     // Affiche ou masque le toggle auto-sync Firebase selon l'état de connexion
     function handleAutoSyncAuthChange() {
         const control = document.getElementById('autoSyncFirebaseControl');
+        const toggle = document.getElementById('autoSyncFirebaseToggle');
         if (!control) return;
         if (currentUser) {
             control.style.display = '';
+            // Restaurer l'état du toggle depuis localStorage
+            const saved = localStorage.getItem('autoSyncFirebaseEnabled') === 'true';
+            if (toggle) {
+                toggle.checked = saved;
+                updateAutoSyncFirebaseUI();
+            }
         } else {
             control.style.display = 'none';
+            // Arrêter la sync auto si déco
+            if (toggle) {
+                toggle.checked = false;
+                updateAutoSyncFirebaseUI();
+            }
         }
     }
+    // ==================== SYNC AUTO FIREBASE ====================
+    let autoSyncFirebaseInterval = null;
+
+    function toggleAutoSyncFirebase() {
+        const toggle = document.getElementById('autoSyncFirebaseToggle');
+        if (!toggle) return;
+        const enabled = toggle.checked;
+        localStorage.setItem('autoSyncFirebaseEnabled', enabled ? 'true' : 'false');
+        updateAutoSyncFirebaseUI();
+    }
+
+    function updateAutoSyncFirebaseUI() {
+        const toggle = document.getElementById('autoSyncFirebaseToggle');
+        if (!toggle) return;
+        const enabled = toggle.checked;
+        if (enabled && currentUser) {
+            startAutoSyncFirebase();
+        } else {
+            stopAutoSyncFirebase();
+        }
+    }
+
+    function startAutoSyncFirebase() {
+        stopAutoSyncFirebase();
+        // Export toutes les 5 min si connecté
+        if (currentUser) {
+            autoSyncFirebaseInterval = setInterval(() => {
+                exportDataToFirebase();
+            }, 5 * 60 * 1000);
+        }
+    }
+
+    function stopAutoSyncFirebase() {
+        if (autoSyncFirebaseInterval) {
+            clearInterval(autoSyncFirebaseInterval);
+            autoSyncFirebaseInterval = null;
+        }
+    }
+
+    // (Supprimé : l'import auto est maintenant géré dans onAuthStateChanged)
 
     function updateAuthUI() {
         // Pour le bouton dans le menu Actions
@@ -3484,6 +3553,10 @@ APPROCHE DE DÉVELOPPEMENT :
             if (!currentUser) {
                 alert('Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
                 return;
+            }
+            // Toujours forcer la présence de la clé autoSyncFirebaseEnabled
+            if (localStorage.getItem('autoSyncFirebaseEnabled') === null) {
+                localStorage.setItem('autoSyncFirebaseEnabled', 'false');
             }
             const allData = {};
             for (let i = 0; i < localStorage.length; i++) {
