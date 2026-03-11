@@ -1148,7 +1148,7 @@ APPROCHE DE DÉVELOPPEMENT :
             right: 20px;
             z-index: 10000;
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             gap: 10px;
             pointer-events: none;
         }
@@ -5970,7 +5970,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 </div>
             `;
             
-            container.appendChild(toast);
+            container.prepend(toast);
             
             // Fonction pour fermer le toast proprement
             const closeToast = () => {
