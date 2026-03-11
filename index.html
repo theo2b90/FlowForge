@@ -6111,10 +6111,8 @@ APPROCHE DE DÉVELOPPEMENT :
             if (totalFocusSeconds >= dedicatedSeconds && !taskNotificationShown[taskKey]) {
                 taskNotificationShown[taskKey] = true;
                 playTaskCompleteSound();
-                // Nouvelle logique : ne plus afficher la popup ni auto-cocher.
-                // On laisse l'utilisateur marquer manuellement la tâche. On affiche simplement
-                // une notification discrète (toast) pour l'informer.
-                showToast(`✅ Temps dédié atteint pour "${matchingTask.name}" (${matchingTask.dedicatedMinutes} min) — cochez-la manuellement si souhaité.`, 'Tâche terminée ⭐');
+                // Suppression de la notification toast de tâche terminée.
+                // On laisse l'utilisateur marquer manuellement la tâche.
             }
         }
         
@@ -8631,7 +8629,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 if (dailyStars.includes(todayKey)) return; // déjà comptée
                 dailyStars.push(todayKey);
                 localStorage.setItem('dailyStars', JSON.stringify(dailyStars));
-                showToast('📢', `Tâche terminée ⭐`);
+                // Suppression de la notification toast de tâche terminée.
                 renderInsights();
             } catch (e) {
                 console.debug('[Stars] evaluate error', e);
