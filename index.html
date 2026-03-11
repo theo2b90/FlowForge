@@ -7937,7 +7937,7 @@ APPROCHE DE DÉVELOPPEMENT :
                         gradient: 'linear-gradient(135deg, #1d976c 0%, #93f9b9 100%)',
                         label: 'Score semaine',
                         value: `${stats.weeklyScore}/100`,
-                        subtext: `Focus: ${stats.focusWeekPct}% (${stats.weekFocusMinutes}/${stats.weeklyFocusTarget} min) • Taches: ${stats.tasksWeekPct}% • Dico: ${stats.vocabWeekPct}%`
+                        subtext: `Focus: ${stats.focusWeekPct}% (${Math.round(stats.weekFocusMinutes)}/${stats.weeklyFocusTarget} min) • Taches: ${stats.tasksWeekPct}% • Dico: ${stats.vocabWeekPct}%`
                     },
                     'daily-objectives': {
                         gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
