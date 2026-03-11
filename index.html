@@ -2890,6 +2890,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 <div style="margin-top:10px; font-size:12px; text-align:center;">
                     <span id="authSwitchText">Pas de compte ?</span>
                     <a href="#" onclick="switchAuthMode();return false;" id="authSwitchLink">Créer un compte</a>
+                    <br>
+                    <a href="#" onclick="sendPasswordReset();return false;" style="color:#0066cc;">Mot de passe oublié&nbsp;?</a>
                 </div>
             </div>
         </div>
@@ -3010,11 +3012,12 @@ APPROCHE DE DÉVELOPPEMENT :
                         <span>📤</span>
                         <span>Importer (local)</span>
                     </button>
-                    <button onclick="exportDataToFirebase(); closeActionsMenu()" title="Exporter la config sur Firebase">
+                    <!-- bouton export Firebase masqué si non connecté -->
+                    <button id="exportFirebaseBtn" onclick="exportDataToFirebase(); closeActionsMenu()" title="Exporter la config sur Firebase" style="display:none;">
                         <span>☁️⬆️</span>
                         <span>Exporter vers Firebase</span>
                     </button>
-                    <button onclick="importDataFromFirebase(); closeActionsMenu()" title="Importer la config depuis Firebase">
+                    <button id="importFirebaseBtn" onclick="importDataFromFirebase(); closeActionsMenu()" title="Importer la config depuis Firebase" style="display:none;">
                         <span>☁️⬇️</span>
                         <span>Importer depuis Firebase</span>
                     </button>
@@ -3415,12 +3418,18 @@ APPROCHE DE DÉVELOPPEMENT :
         // Pour le bouton dans le menu Actions
         const btnText = document.getElementById('authBtnText');
         const btnIcon = document.getElementById('authBtnIcon');
+        const exportFirebaseBtn = document.getElementById('exportFirebaseBtn');
+        const importFirebaseBtn = document.getElementById('importFirebaseBtn');
         if (currentUser) {
             btnText.textContent = 'Déconnexion (' + (currentUser.email || 'utilisateur') + ')';
             btnIcon.textContent = '🚪';
+            if (exportFirebaseBtn) exportFirebaseBtn.style.display = '';
+            if (importFirebaseBtn) importFirebaseBtn.style.display = '';
         } else {
             btnText.textContent = 'Connexion';
             btnIcon.textContent = '🔑';
+            if (exportFirebaseBtn) exportFirebaseBtn.style.display = 'none';
+            if (importFirebaseBtn) importFirebaseBtn.style.display = 'none';
         }
     }
 
@@ -3430,6 +3439,22 @@ APPROCHE DE DÉVELOPPEMENT :
         firebase.auth().signInWithPopup(provider)
             .then(() => { closeAuthModal(); })
             .catch(e => alert('Erreur Google : ' + e.message));
+    }
+
+    // Envoi d'un mail de réinitialisation de mot de passe
+    function sendPasswordReset() {
+        const email = document.getElementById('authEmail').value;
+        if (!email) {
+            alert('Veuillez entrer votre adresse email pour recevoir le lien de réinitialisation.');
+            return;
+        }
+        firebase.auth().sendPasswordResetEmail(email)
+            .then(() => {
+                alert('Un email de réinitialisation a été envoyé à ' + email + '.');
+            })
+            .catch(e => {
+                alert('Erreur lors de l\'envoi du mail : ' + e.message);
+            });
     }
     </script>
     <script>
