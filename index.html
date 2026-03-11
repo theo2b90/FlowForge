@@ -3129,106 +3129,52 @@ APPROCHE DE DÉVELOPPEMENT :
                 <button class="help-close" onclick="closeHelpNotice()">Fermer</button>
             </div>
             <div class="help-modal-body">
+                <h2>Notice utilisateur FlowForge v1.0 (mise à jour 2026)</h2>
                 <p>
-                    FlowForge est une application de productivité orientée apprentissage, combinant Pomodoro,
-                    tâches récurrentes, objectifs, traduction, dictionnaire personnel et suivi de progression.
+                    FlowForge est une application de productivité complète, orientée apprentissage et gestion du temps, combinant Pomodoro, tâches récurrentes, objectifs, dictionnaire, traduction, statistiques, journal, synchronisation cloud et interface personnalisable.
                 </p>
-
-                <h3>🍅 1. Contextes Pomodoro</h3>
+                <h3>Fonctionnalités principales</h3>
                 <ul>
-                    <li><strong>+ Nouveau</strong> : Ajoutez un contexte depuis l'en-tête du bloc Contextes.</li>
-                    <li><strong>Contrôles</strong> : Start/Pause/Reset pour gérer vos sessions de 25 minutes.</li>
-                    <li><strong>Cycles automatiques</strong> : Alternance travail → pause courte (5 min) → pause longue (15 min après 4 cycles).</li>
-                    <li><strong>Stigmergie</strong> : Zone de texte pour noter la prochaine action et faciliter la reprise.</li>
-                    <li><strong>Liaison tâches</strong> : Si une tâche porte le même nom qu'un contexte, la progression se synchronise automatiquement.</li>
+                    <li>🍅 <strong>Timer Pomodoro multi-contextes</strong> (25min travail / 5min pause / 15min pause longue, cycles personnalisables, mode vitesse ×1 à ×240)</li>
+                    <li>✅ <strong>Gestion de tâches récurrentes</strong> (quotidien, hebdomadaire, mensuel, annuel, checklist, étoiles de complétion, notifications)</li>
+                    <li>📊 <strong>Statistiques détaillées</strong> (score hebdomadaire pondéré, graphiques 7j/30j/12 mois, régularité, KPIs, export CSV/JSON)</li>
+                    <li>🎪 <strong>Système de Grâce</strong> (joker hebdomadaire, suivi d'utilisation, stratégie de récupération)</li>
+                    <li>📚 <strong>Dictionnaire de vocabulaire</strong> (révision espacée, niveaux 🔴→🟠→🟢, catégories, mode pratique, ajout rapide, export/import)</li>
+                    <li>🌐 <strong>Traducteur EN→FR</strong> (multi-API, fallback automatique, historique, copier/coller rapide)</li>
+                    <li>📝 <strong>Bloc-notes et journal horodaté</strong> (notes libres, journal quotidien, recherche, export)</li>
+                    <li>🎯 <strong>Objectifs automatiques et manuels</strong> (quotidiens, hebdomadaires, mensuels, annuels, suivi de progression, validation)</li>
+                    <li>📈 <strong>Graphiques de progression</strong> (régularité, score, objectifs, tâches, dictionnaire)</li>
+                    <li>💾 <strong>Import/Export JSON + CSV</strong> (sauvegarde locale, synchronisation Firebase, historique des sessions)</li>
+                    <li>⚡ <strong>Mode vitesse</strong> (accélération du timer pour tests, ×1 à ×240)</li>
+                    <li>🎨 <strong>Interface responsive et personnalisable</strong> (drag & drop panneaux, réglage largeur, thèmes, mode focus)</li>
+                    <li>🔐 <strong>Authentification Firebase</strong> (connexion, création de compte, Google, synchronisation multi-utilisateur)</li>
+                    <li>🔄 <strong>Synchronisation automatique</strong> (sauvegarde toutes les 5 min, import/export manuel, gestion des conflits)</li>
+                    <li>🧩 <strong>Snippets & liens rapides</strong> (ajout de code, liens utiles, partage, recherche développeur intégrée)</li>
+                    <li>🛠️ <strong>Utilitaires</strong> (raccourcis clavier, notifications sonores, aide contextuelle, onboarding interactif)</li>
                 </ul>
-
-                <h3>📊 2. Insights (Stats / Régularité / Objectifs)</h3>
+                <h3>Technologies</h3>
                 <ul>
-                    <li><strong>Onglet Stats</strong> : Synthèse du temps de focus, contextes actifs, objectifs complétés (jour/semaine/mois/année).</li>
-                    <li><strong>Score hebdomadaire</strong> : Calcul combiné sur focus, tâches et vocabulaire.</li>
-                    <li><strong>Graphiques</strong> : Visualisation de la progression sur 7 jours, 30 jours, 12 mois et l'année complète.</li>
-                    <li><strong>Onglet Régularité</strong> : Graphique de vos 7 derniers jours de productivité avec détails par jour.</li>
-                    <li><strong>Onglet Objectifs</strong> : Vue d'ensemble des objectifs journaliers, hebdomadaires, mensuels et annuels (automatiques + manuels).</li>
-                    <li><strong>🎪 Grâce (Joker)</strong> : Bouton pour valider automatiquement votre journée (1 fois/semaine, ajoute le temps manquant pour atteindre l'objectif du jour).</li>
-                    <li><strong>Réinitialisation</strong> : Bouton pour remettre les statistiques à zéro (conserve tâches, objectifs et dictionnaire).</li>
+                    <li>HTML5, CSS3 (Flexbox, Grid, Animations)</li>
+                    <li>Vanilla JavaScript (ES6+)</li>
+                    <li>LocalStorage API (persistance locale)</li>
+                    <li>Service Worker (PWA, fonctionnement offline)</li>
+                    <li>Audio API (notifications sonores)</li>
+                    <li>Firebase (authentification, Firestore, synchronisation)</li>
                 </ul>
-
-                <h3>✔️ 3. Tâches à faire & Objectifs</h3>
+                <h3>Conseils d'utilisation</h3>
                 <ul>
-                    <li><strong>Création de tâche</strong> : Nom, périodicité (quotidienne/hebdo/mensuelle/annuelle/unique), temps dédié par jour.</li>
-                    <li><strong>Synchronisation contexte</strong> : Une tâche nommée identiquement à un contexte se lie automatiquement (insensible à la casse).</li>
-                    <li><strong>Badges intelligents</strong> : Affichage dynamique de la progression (Jour X/Y) avec code couleur (rouge/orange/vert).</li>
-                    <li><strong>Validation manuelle</strong> : Cochez une tâche pour la marquer comme complétée (compte dans les objectifs même sans temps de focus).</li>
-                    <li><strong>Bouton Reset (↺)</strong> : Réinitialise la progression d'une tâche récurrente (repart à Jour 1).</li>
-                    <li><strong>Badge "LIE AU CONTEXTE"</strong> : Confirme qu'une liaison active existe entre tâche et contexte.</li>
-                    <li><strong>Aide compacte</strong> : Le panneau "Comment ça marche ?" est repliable pour gagner de la place.</li>
-                    <li><strong>Objectifs automatiques</strong> : Les tâches génèrent automatiquement des objectifs selon leur périodicité.</li>
-                    <li><strong>Objectifs manuels</strong> : Créez des objectifs personnalisés (journaliers/hebdo/mensuels/annuels) indépendants des tâches.</li>
+                    <li>Utilisez le mode vitesse pour tester rapidement les cycles Pomodoro.</li>
+                    <li>Activez la synchronisation Firebase pour sauvegarder vos données sur le cloud.</li>
+                    <li>Personnalisez l'interface via le menu Actions (drag & drop, largeur des panneaux, mode focus).</li>
+                    <li>Ajoutez des mots au dictionnaire pour suivre votre progression linguistique.</li>
+                    <li>Consultez les statistiques pour visualiser votre régularité et vos scores.</li>
+                    <li>Utilisez le journal pour garder une trace de vos journées et réflexions.</li>
                 </ul>
-
-                <h3>📝 4. Notes, Journal, Traducteur, Dictionnaire</h3>
+                <h3>Support & évolution</h3>
                 <ul>
-                    <li><strong>Notes</strong> : Prise de notes libre avec sauvegarde automatique et export texte (.txt).</li>
-                    <li><strong>Journal</strong> : Ajout d'entrées horodatées (Ctrl+Entrée pour valider) avec export dédié et recherche.</li>
-                    <li><strong>Traducteur bidirectionnel</strong> : Anglais → Français ou Français → Anglais.</li>
-                    <li><strong>Choix d'API</strong> : Sélection de l'API préférée (SimplyTranslate, Lingva, MyMemory, LibreTranslate) avec fallback automatique.</li>
-                    <li><strong>Dictionnaire - Sauvegarde</strong> : Les traductions sont automatiquement enregistrées avec système de révision espacée.</li>
-                    <li><strong>Dictionnaire - États</strong> : 🔴 Rouge (nouveau) → 🟠 Orange (en révision) → 🟢 Vert (maîtrisé).</li>
-                    <li><strong>Dictionnaire - Révision</strong> : Mode pratique FR → EN ou EN → FR (révélation au clic).</li>
-                    <li><strong>Dictionnaire - Recherche</strong> : Barre de recherche en temps réel pour filtrer vos mots.</li>
-                    <li><strong>Dictionnaire - Import CSV</strong> : Importez un fichier CSV (format: mot,traduction,état) pour ajouter des mots en masse.</li>
-                    <li><strong>Dictionnaire - Export CSV</strong> : Téléchargez votre dictionnaire complet au format CSV.</li>
-                    <li><strong>Exemples Linguee</strong> : Bouton dédié sur chaque mot du dictionnaire pour ouvrir des exemples de contexte.</li>
-                    <li><strong>Dictionnaire - Synchronisation</strong> : Les traductions du dictionnaire apparaissent automatiquement quand vous traduisez un mot déjà connu.</li>
-                    <li><strong>Objectif vocabulaire</strong> : Cible hebdomadaire de mots à passer en vert (compte dans le score hebdomadaire à 25%).</li>
+                    <li>Projet personnel, usage éducatif et productif.</li>
+                    <li>Suggestions et feedbacks bienvenus pour améliorer l'application.</li>
                 </ul>
-
-                <h3>⚙️ 5. Menu Actions (accès centralisé)</h3>
-                <ul>
-                    <li><strong>📖 Notice</strong> : Affiche cette aide complète.</li>
-                    <li><strong>⚡ Vitesse</strong> : Accélère le temps (×1 à ×240) pour tester rapidement vos workflows.</li>
-                    <li><strong>🎪 Grâce - Activer</strong> : Active/désactive le système de joker hebdomadaire (valide automatiquement 1 journée par semaine).</li>
-                    <li><strong>📥 Exporter</strong> : Télécharge une sauvegarde JSON complète de toutes vos données.</li>
-                    <li><strong>📤 Importer</strong> : Restaure vos données depuis une sauvegarde JSON (⚠️ écrase les données actuelles).</li>
-                    <li><strong>🎯 Mode Focus</strong> : Masque tous les panneaux sauf les contextes pour concentration maximale.</li>
-                    <li><strong>🧩 Disposition des blocs</strong> : Réglage des largeurs dans une section repliable (Contextes, Insights, Tâches, Notes).</li>
-                    <li><strong>📊 Historique</strong> : Affiche les 30 dernières sessions Pomodoro (contexte, durée, horodatage).</li>
-                </ul>
-
-                <h3>🎨 6. Personnalisation interface</h3>
-                <ul>
-                    <li><strong>Drag & Drop des grands blocs</strong> : Déplacez les panneaux via les poignées ⋮⋮ (ordre mémorisé).</li>
-                    <li><strong>Hauteurs alignées</strong> : Les 4 grands blocs restent alignés pour une lecture propre.</li>
-                    <li><strong>Textareas redimensionnables</strong> : Glissez le coin inférieur droit pour agrandir Notes/Traducteur.</li>
-                    <li><strong>Sauvegarde automatique</strong> : Toutes vos données et préférences UI sont conservées dans le navigateur.</li>
-                </ul>
-
-                <h3>⌨️ 7. Raccourcis clavier</h3>
-                <ul>
-                    <li><strong>Ctrl+Shift+E</strong> : Exporter une sauvegarde</li>
-                    <li><strong>Ctrl+Shift+I</strong> : Importer une sauvegarde</li>
-                    <li><strong>Ctrl+Shift+H</strong> : Afficher l'historique des sessions</li>
-                    <li><strong>Ctrl+Shift+F</strong> : Activer/désactiver le mode focus</li>
-                    <li><strong>Ctrl+Entrée</strong> : Valider entrée journal / traduire texte / sauvegarder un snippet</li>
-                    <li><strong>Escape</strong> : Fermer les fenêtres modales ouvertes</li>
-                </ul>
-
-                <h3>📱 8. Installation (Progressive Web App)</h3>
-                <ul>
-                    <li><strong>Mobile</strong> : Menu navigateur → "Ajouter à l'écran d'accueil" (Chrome/Safari).</li>
-                    <li><strong>Desktop</strong> : Icône d'installation dans la barre d'adresse (Chrome/Edge).</li>
-                    <li><strong>Hors-ligne</strong> : L'application fonctionne sans connexion après installation (Service Worker).</li>
-                    <li><strong>Mise à jour</strong> : Rechargez (Ctrl+F5) en cas de comportement anormal après mise à jour.</li>
-                </ul>
-
-                <p style="margin-top: 20px; padding: 12px; background: #f0f7ff; border-left: 4px solid #0066cc; border-radius: 4px;">
-                    <strong>💡 Conseils Pro</strong> :<br>
-                    • Utilisez la vitesse ×120 ou ×240 pour simuler plusieurs jours de travail et visualiser la progression de vos tâches récurrentes.<br>
-                    • La 🎪 Grâce se réinitialise chaque lundi : utilisez-la stratégiquement les jours difficiles !<br>
-                    • Créez des tâches avec le même nom que vos contextes Pomodoro pour un suivi automatique du temps.<br>
-                    • Utilisez le mode pratique du dictionnaire + Linguee pour mémoriser plus vite en contexte réel.
-                </p>
             </div>
         </div>
     </div>
@@ -3489,9 +3435,8 @@ APPROCHE DE DÉVELOPPEMENT :
 
     function startAutoSyncFirebase() {
         stopAutoSyncFirebase();
-        // Export immédiat puis toutes les 5 min si connecté
+        // Export toutes les 5 min si connecté (plus d'export immédiat au rafraîchissement)
         if (currentUser) {
-            exportDataToFirebase(); // Export immédiat
             autoSyncFirebaseInterval = setInterval(() => {
                 exportDataToFirebase();
             }, 5 * 60 * 1000);
@@ -3595,7 +3540,9 @@ APPROCHE DE DÉVELOPPEMENT :
                 localStorage.clear();
                 Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
                 showToast('success','Importation cloud réussie');
-                location.reload();
+                setTimeout(() => {
+                    location.reload();
+                }, 2000); // Attente 2 secondes pour laisser le toast visible
             } catch (e) {
                 showToast('error', 'Import Firebase', '❌ Erreur lors de l\'import Firebase : ' + e.message);
             }
