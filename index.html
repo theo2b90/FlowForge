@@ -20,7 +20,7 @@
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-FONCTIONNALITÉS PRINCIPALES :
+FONCTIONNALITÉS PRINCIPALES :F
   • 🍅 Timer Pomodoro multi-contextes (25min travail / 5min pause / 15min pause longue)
   • ✅ Gestion de tâches récurrentes (quotidien, hebdomadaire, mensuel, annuel)
   • 📊 Statistiques détaillées avec score hebdomadaire pondéré
@@ -58,6 +58,25 @@ APPROCHE DE DÉVELOPPEMENT :
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FlowForge">
+        <!-- Firebase App (core SDK) -->
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+        <!-- ⚠️ Remplace la config ci-dessous par celle de ton projet Firebase (console.firebase.google.com) -->
+        <script>
+            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+            const firebaseConfig = {
+                apiKey: "AIzaSyD7T5EIk3RolWYjl5U4ex-PfU2ZNeeELwI",
+                authDomain: "flowforge-12f22.firebaseapp.com",
+                projectId: "flowforge-12f22",
+                storageBucket: "flowforge-12f22.appspot.com",
+                messagingSenderId: "1053698443192",
+                appId: "1:1053698443192:web:85e27b167a91d02539f14d",
+                measurementId: "G-YCH23JFD03"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+        </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230066cc' width='192' height='192'/><text x='50%' y='50%' font-size='100' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'>⏱️</text></svg>">
     <style>
         /* ==================== REINITIALISATION & FONDATIONS ==================== */
@@ -2853,6 +2872,27 @@ APPROCHE DE DÉVELOPPEMENT :
     </style>
 </head>
 <body>
+        <!-- Modal Authentification Firebase -->
+        <div class="import-modal" id="authModal" onclick="handleAuthOverlayClick(event)">
+            <div class="import-modal-panel">
+                <div class="import-modal-header" id="authModalTitle">Connexion</div>
+                <input type="email" id="authEmail" placeholder="Email" autocomplete="username" />
+                <input type="password" id="authPassword" placeholder="Mot de passe" autocomplete="current-password" />
+                <div class="import-modal-button">
+                    <button class="cancel-btn" onclick="closeAuthModal()">Annuler</button>
+                    <button class="confirm-btn" onclick="submitAuth()" id="authSubmitBtn">Se connecter</button>
+                </div>
+                <div style="margin-top:10px; text-align:center;">
+                    <button style="background:#fff; color:#444; border:1px solid #ccc; border-radius:4px; padding:8px 16px; display:flex; align-items:center; gap:8px; margin:auto; cursor:pointer;" onclick="signInWithGoogle()">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px; height:20px; vertical-align:middle;"> Connexion avec Google
+                    </button>
+                </div>
+                <div style="margin-top:10px; font-size:12px; text-align:center;">
+                    <span id="authSwitchText">Pas de compte ?</span>
+                    <a href="#" onclick="switchAuthMode();return false;" id="authSwitchLink">Créer un compte</a>
+                </div>
+            </div>
+        </div>
     <style>
         /* Overrides mobiles: centrer le dropdown Actions et montrer le select moteur */
         @media (max-width: 600px) {
@@ -2909,6 +2949,10 @@ APPROCHE DE DÉVELOPPEMENT :
                     <span style="font-size: 10px;">▼</span>
                 </button>
                 <div class="actions-dropdown" id="actionsDropdown">
+                    <button id="authBtnDropdown" onclick="handleAuthBtnClick(); closeActionsMenu()" style="display:flex;align-items:center;gap:8px;background:#f1f5f9;color:#304055;">
+                        <span id="authBtnIcon">🔑</span>
+                        <span id="authBtnText">Connexion</span>
+                    </button>
                     <button onclick="openHelpNotice(); closeActionsMenu()" title="Voir la notice d'utilisation">
                         <span>📖</span>
                         <span>Notice</span>
@@ -2960,11 +3004,19 @@ APPROCHE DE DÉVELOPPEMENT :
                     <div class="separator"></div>
                     <button onclick="exportData(); closeActionsMenu()" title="Télécharger une sauvegarde JSON">
                         <span>📥</span>
-                        <span>Exporter</span>
+                        <span>Exporter (local)</span>
                     </button>
                     <button onclick="openImportModal(); closeActionsMenu()" title="Importer une sauvegarde JSON">
                         <span>📤</span>
-                        <span>Importer</span>
+                        <span>Importer (local)</span>
+                    </button>
+                    <button onclick="exportDataToFirebase(); closeActionsMenu()" title="Exporter la config sur Firebase">
+                        <span>☁️⬆️</span>
+                        <span>Exporter vers Firebase</span>
+                    </button>
+                    <button onclick="importDataFromFirebase(); closeActionsMenu()" title="Importer la config depuis Firebase">
+                        <span>☁️⬇️</span>
+                        <span>Importer depuis Firebase</span>
                     </button>
                     <button onclick="handleFullReset(); closeActionsMenu()" title="Réinitialiser complètement l'application">
                         <span>♻️</span>
@@ -3252,19 +3304,24 @@ APPROCHE DE DÉVELOPPEMENT :
 
     <!-- Fenetre modale d'historique des sessions -->
     <div class="history-modal" id="historyModal" onclick="handleHistoryOverlayClick(event)">
-        <div class="history-modal-panel">
-            <div class="history-modal-header">
-                <div class="history-modal-title">Historique des sessions</div>
-                <button class="history-close" onclick="closeSessionHistory()">Fermer</button>
+            <div class="import-modal-panel">
+                <div class="import-modal-header" id="authModalTitle">Connexion</div>
+                <input type="email" id="authEmail" placeholder="Email" autocomplete="username" />
+                <input type="password" id="authPassword" placeholder="Mot de passe" autocomplete="current-password" />
+                <div class="import-modal-button">
+                    <button class="cancel-btn" onclick="closeAuthModal()">Annuler</button>
+                    <button class="confirm-btn" onclick="submitAuth()" id="authSubmitBtn">Se connecter</button>
+                </div>
+                <div style="margin-top:10px; font-size:12px; text-align:center;">
+                    <span id="authSwitchText">Pas de compte ?</span>
+                    <a href="#" onclick="switchAuthMode();return false;" id="authSwitchLink">Créer un compte</a>
+                </div>
+                <div style="margin:18px 0 0 0; text-align:center;">
+                    <button onclick="signInWithGoogle()" style="background:#fff;color:#222;border:1px solid #ccc;padding:8px 18px;border-radius:6px;display:flex;align-items:center;gap:8px;font-size:14px;margin:0 auto;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;vertical-align:middle;"> Connexion avec Google
+                    </button>
+                </div>
             </div>
-            <div class="history-modal-body" id="historyContent">
-                <!-- Contenu rendu dynamiquement -->
-            </div>
-        </div>
-    </div>
-
-    <style>
-        /* Affinage header mobile : champ recherche compact qui s'étend au focus */
         @media (max-width: 480px) {
             .header { padding: 8px 10px; gap: 8px; }
             .header h1 { font-size: 18px; }
@@ -3291,6 +3348,136 @@ APPROCHE DE DÉVELOPPEMENT :
     </style>
 
     <script>
+    // ==================== AUTHENTIFICATION FIREBASE ====================
+    let currentUser = null;
+    let authMode = 'login'; // ou 'register'
+
+    function handleAuthBtnClick() {
+        if (currentUser) {
+            // Déconnexion
+            firebase.auth().signOut();
+        } else {
+            openAuthModal();
+        }
+    }
+
+    function openAuthModal() {
+        document.getElementById('authModal').classList.add('visible');
+        document.getElementById('authEmail').value = '';
+        document.getElementById('authPassword').value = '';
+        setAuthMode('login');
+    }
+
+    function closeAuthModal() {
+        document.getElementById('authModal').classList.remove('visible');
+    }
+
+    function handleAuthOverlayClick(event) {
+        if (event.target && event.target.id === 'authModal') closeAuthModal();
+    }
+
+    function setAuthMode(mode) {
+        authMode = mode;
+        document.getElementById('authModalTitle').textContent = mode === 'login' ? 'Connexion' : 'Créer un compte';
+        document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Se connecter' : 'Créer le compte';
+        document.getElementById('authSwitchText').textContent = mode === 'login' ? 'Pas de compte ?' : 'Déjà inscrit ?';
+        document.getElementById('authSwitchLink').textContent = mode === 'login' ? 'Créer un compte' : 'Se connecter';
+    }
+
+    function switchAuthMode() {
+        setAuthMode(authMode === 'login' ? 'register' : 'login');
+    }
+
+    function submitAuth() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        if (!email || !password) {
+            alert('Merci de remplir email et mot de passe.');
+            return;
+        }
+        if (authMode === 'login') {
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => { closeAuthModal(); })
+                .catch(e => alert('Erreur de connexion : ' + e.message));
+        } else {
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then(() => { closeAuthModal(); })
+                .catch(e => alert('Erreur de création : ' + e.message));
+        }
+    }
+
+    firebase.auth().onAuthStateChanged(function(user) {
+        currentUser = user;
+        updateAuthUI();
+    });
+
+    function updateAuthUI() {
+        // Pour le bouton dans le menu Actions
+        const btnText = document.getElementById('authBtnText');
+        const btnIcon = document.getElementById('authBtnIcon');
+        if (currentUser) {
+            btnText.textContent = 'Déconnexion (' + (currentUser.email || 'utilisateur') + ')';
+            btnIcon.textContent = '🚪';
+        } else {
+            btnText.textContent = 'Connexion';
+            btnIcon.textContent = '🔑';
+        }
+    }
+
+    // Connexion Google
+    function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+            .then(() => { closeAuthModal(); })
+            .catch(e => alert('Erreur Google : ' + e.message));
+    }
+    </script>
+    <script>
+        // ==================== FIREBASE EXPORT/IMPORT ====================
+        // Multi-utilisateur : chaque sauvegarde est liée à l'utilisateur connecté (UID)
+        async function exportDataToFirebase() {
+            if (!currentUser) {
+                alert('Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
+                return;
+            }
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allData[key] = localStorage.getItem(key);
+            }
+            try {
+                await db.collection('flowforge_configs').doc(currentUser.uid).set({
+                    data: allData,
+                    updatedAt: new Date().toISOString(),
+                    email: currentUser.email || null
+                });
+                alert('✅ Sauvegarde cloud enregistrée pour ' + (currentUser.email || 'utilisateur') + ' !');
+            } catch (e) {
+                alert('❌ Erreur lors de l\'export Firebase : ' + e.message);
+            }
+        }
+
+        async function importDataFromFirebase() {
+            if (!currentUser) {
+                alert('Connecte-toi d\'abord pour importer ta sauvegarde cloud.');
+                return;
+            }
+            try {
+                const doc = await db.collection('flowforge_configs').doc(currentUser.uid).get();
+                if (!doc.exists) {
+                    alert('❌ Aucune sauvegarde trouvée pour cet utilisateur.');
+                    return;
+                }
+                const allData = doc.data().data;
+                if (!allData) throw new Error('Données invalides');
+                localStorage.clear();
+                Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
+                alert('✅ Import cloud réussi ! L\'application va recharger les données.');
+                location.reload();
+            } catch (e) {
+                alert('❌ Erreur lors de l\'import Firebase : ' + e.message);
+            }
+        }
         /*
         ╔════════════════════════════════════════════════════════════════════════════╗
         ║                                                                            ║
