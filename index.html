@@ -3058,6 +3058,13 @@ APPROCHE DE DÉVELOPPEMENT :
                         </div>
                     </details>
                     <div class="separator"></div>
+                    <div class="speed-control" id="autoSyncFirebaseControl" style="display:none;">
+                        <label>☁️ Sync auto Firebase</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoSyncFirebaseToggle" onchange="toggleAutoSyncFirebase()" />
+                            Activer
+                        </label>
+                    </div>
                     <button onclick="openSessionHistory(); closeActionsMenu()" title="Afficher l'historique des sessions">
                         <span>📊</span>
                         <span>Historique</span>
@@ -3409,10 +3416,23 @@ APPROCHE DE DÉVELOPPEMENT :
         }
     }
 
+
     firebase.auth().onAuthStateChanged(function(user) {
         currentUser = user;
         updateAuthUI();
+        handleAutoSyncAuthChange();
     });
+
+    // Affiche ou masque le toggle auto-sync Firebase selon l'état de connexion
+    function handleAutoSyncAuthChange() {
+        const control = document.getElementById('autoSyncFirebaseControl');
+        if (!control) return;
+        if (currentUser) {
+            control.style.display = '';
+        } else {
+            control.style.display = 'none';
+        }
+    }
 
     function updateAuthUI() {
         // Pour le bouton dans le menu Actions
