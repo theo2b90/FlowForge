@@ -2885,7 +2885,7 @@ APPROCHE DE DÉVELOPPEMENT :
         <div class="header">
             <div class="brand-block">
                 <h1>FlowForge</h1>
-                <p class="brand-subtitle">Pomodoro + Objectifs + Vocabulaire dev</p>
+                <p class="brand-subtitle">Outil de gestion de tâches et d'objectifs</p>
             </div>
             <div class="dev-search">
                 <input 
@@ -3014,7 +3014,7 @@ APPROCHE DE DÉVELOPPEMENT :
             <div class="contexts layout-panel" id="contextsContainer" data-panel-id="contexts" draggable="true"></div>
             <div class="insights layout-panel" data-panel-id="insights" draggable="true">
                 <div class="panel-topbar">
-                    <span>📊 Insights</span>
+                    <span>📊 Aperçu</span>
                     <span class="panel-drag-handle" draggable="true" title="Glisser pour déplacer le bloc">⋮⋮</span>
                 </div>
                 <div class="insights-tabs">
@@ -4525,7 +4525,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 if (completedToday) {
                     return `
                     <div style="margin-top: 6px; padding: 6px 8px; background: #22c55e15; border-left: 3px solid #22c55e; border-radius: 4px; font-size: 11px;">
-                        <strong>✅ Objectif du jour atteint • ⭐</strong>
+                        <strong>✅ Tâche terminée ⭐</strong>
                     </div>
                 `;
                 }
@@ -4772,24 +4772,26 @@ APPROCHE DE DÉVELOPPEMENT :
                 const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(ctxName || '').trim().toLowerCase());
                 if (!matchedContext) return;
 
-                const minutesToday = getContextTimeInLastNDays({}, matchedContext, 1);
+                // Arrondir les minutes du jour
+                const minutesToday = Math.round(getContextTimeInLastNDays({}, matchedContext, 1));
 
                 // Somme des besoins pour chaque tâche relative au minutesToday initial
                 const totalNeeded = tasksByContext[ctxName].reduce((sum, t) => {
-                    const need = Math.max(0, (Number(t.dedicatedMinutes) || 0) - minutesToday);
+                    const need = Math.max(0, Math.round(Number(t.dedicatedMinutes) || 0) - minutesToday);
                     return sum + need;
                 }, 0);
 
-                if (totalNeeded > 0) {
+                const totalNeededRounded = Math.round(totalNeeded);
+                if (totalNeededRounded > 0) {
                     // Appliquer une session unique cumulée pour ce contexte
-                    matchedContext.totalFocusSeconds = (Number(matchedContext.totalFocusSeconds) || 0) + totalNeeded * 60;
+                    matchedContext.totalFocusSeconds = (Number(matchedContext.totalFocusSeconds) || 0) + totalNeededRounded * 60;
                     sessionHistory.push({
                         id: Date.now() + Math.floor(Math.random() * 1000),
                         contextName: matchedContext.name,
                         startTime: todayKey,
                         timestamp,
-                        duration: totalNeeded,
-                        durationMinutes: totalNeeded,
+                        duration: totalNeededRounded,
+                        durationMinutes: totalNeededRounded,
                         phase: 'work'
                     });
                     try { distributeCarryoverForContext(matchedContext.name); } catch (e) {}
@@ -6112,7 +6114,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 // Nouvelle logique : ne plus afficher la popup ni auto-cocher.
                 // On laisse l'utilisateur marquer manuellement la tâche. On affiche simplement
                 // une notification discrète (toast) pour l'informer.
-                showToast(`✅ Temps dédié atteint pour "${matchingTask.name}" (${matchingTask.dedicatedMinutes} min) — cochez-la manuellement si souhaité.`, 'info');
+                showToast(`✅ Temps dédié atteint pour "${matchingTask.name}" (${matchingTask.dedicatedMinutes} min) — cochez-la manuellement si souhaité.`, 'Tâche terminée ⭐');
             }
         }
         
@@ -7921,7 +7923,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     },
                     'tasks-completed': {
                         gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                        label: 'Tâches & Objectifs complétés',
+                        label: 'Tâches complétées quotidiennent',
                         value: `${stats.completedTasks}/${stats.totalTasks}`,
                         subtext: `${stats.tasksPercentage}% • ${stats.encouragementMessage}`
                     },
@@ -8629,7 +8631,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 if (dailyStars.includes(todayKey)) return; // déjà comptée
                 dailyStars.push(todayKey);
                 localStorage.setItem('dailyStars', JSON.stringify(dailyStars));
-                showToast('success', `⭐ Étoile gagnée pour ${todayKey}`);
+                showToast('📢', `Tâche terminée ⭐`);
                 renderInsights();
             } catch (e) {
                 console.debug('[Stars] evaluate error', e);
