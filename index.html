@@ -6815,10 +6815,9 @@ APPROCHE DE DÉVELOPPEMENT :
         }
         const jsonStr = JSON.stringify({__flowforge_full_backup: true, data: allData}, null, 2);
         fetch(googleSheetApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: jsonStr
-        })
+    method: 'POST',
+    body: jsonStr // PAS de headers !
+})
         .then(r => r.json())
         .then(res => {
             if (res.success) {
