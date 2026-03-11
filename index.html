@@ -2877,6 +2877,8 @@ APPROCHE DE DÉVELOPPEMENT :
     </style>
 </head>
 <body>
+            <!-- Toast notification -->
+            <div id="toastContainer" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:none;"></div>
         <!-- Modal Authentification Firebase -->
         <div class="import-modal" id="authModal" onclick="handleAuthOverlayClick(event)">
             <div class="import-modal-panel">
@@ -3064,7 +3066,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     </details>
                     <div class="separator"></div>
                     <div class="speed-control" id="autoSyncFirebaseControl" style="display:none;">
-                        <label>☁️ Sync auto Firebase</label>
+                        <label>☁️ Save auto Cloud</label>
                         <label class="checkbox-label">
                             <input type="checkbox" id="autoSyncFirebaseToggle" onchange="toggleAutoSyncFirebase()" />
                             Activer
@@ -3451,15 +3453,16 @@ APPROCHE DE DÉVELOPPEMENT :
             const saved = localStorage.getItem('autoSyncFirebaseEnabled') === 'true';
             if (toggle) {
                 toggle.checked = saved;
-                updateAutoSyncFirebaseUI();
             }
+            // Toujours mettre à jour l'UI (et démarrer l'export auto si activé)
+            updateAutoSyncFirebaseUI();
         } else {
             control.style.display = 'none';
             // Arrêter la sync auto si déco
             if (toggle) {
                 toggle.checked = false;
-                updateAutoSyncFirebaseUI();
             }
+            updateAutoSyncFirebaseUI();
         }
     }
     // ==================== SYNC AUTO FIREBASE ====================
@@ -3486,8 +3489,9 @@ APPROCHE DE DÉVELOPPEMENT :
 
     function startAutoSyncFirebase() {
         stopAutoSyncFirebase();
-        // Export toutes les 5 min si connecté
+        // Export immédiat puis toutes les 5 min si connecté
         if (currentUser) {
+            exportDataToFirebase(); // Export immédiat
             autoSyncFirebaseInterval = setInterval(() => {
                 exportDataToFirebase();
             }, 5 * 60 * 1000);
@@ -3551,7 +3555,7 @@ APPROCHE DE DÉVELOPPEMENT :
         // Multi-utilisateur : chaque sauvegarde est liée à l'utilisateur connecté (UID)
         async function exportDataToFirebase() {
             if (!currentUser) {
-                alert('Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
+                showToast('error', 'Export Firebase', 'Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
                 return;
             }
             // Toujours forcer la présence de la clé autoSyncFirebaseEnabled
@@ -3569,7 +3573,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     updatedAt: new Date().toISOString(),
                     email: currentUser.email || null
                 });
-                alert('✅ Sauvegarde cloud enregistrée pour ' + (currentUser.email || 'utilisateur') + ' !');
+                showToast('success', 'Exportation cloud réussie');
             } catch (e) {
                 alert('❌ Erreur lors de l\'export Firebase : ' + e.message);
             }
@@ -3577,23 +3581,23 @@ APPROCHE DE DÉVELOPPEMENT :
 
         async function importDataFromFirebase() {
             if (!currentUser) {
-                alert('Connecte-toi d\'abord pour importer ta sauvegarde cloud.');
+                showToast('error', 'Import Firebase', 'Connecte-toi d\'abord pour importer ta sauvegarde cloud.');
                 return;
             }
             try {
                 const doc = await db.collection('flowforge_configs').doc(currentUser.uid).get();
                 if (!doc.exists) {
-                    alert('❌ Aucune sauvegarde trouvée pour cet utilisateur.');
+                    showToast('error', 'Import Firebase', '❌ Aucune sauvegarde trouvée pour cet utilisateur.');
                     return;
                 }
                 const allData = doc.data().data;
                 if (!allData) throw new Error('Données invalides');
                 localStorage.clear();
                 Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
-                alert('✅ Import cloud réussi ! L\'application va recharger les données.');
+                showToast('success','Importation cloud réussie');
                 location.reload();
             } catch (e) {
-                alert('❌ Erreur lors de l\'import Firebase : ' + e.message);
+                showToast('error', 'Import Firebase', '❌ Erreur lors de l\'import Firebase : ' + e.message);
             }
         }
         /*
@@ -5914,7 +5918,7 @@ APPROCHE DE DÉVELOPPEMENT :
          * @param {string} path - Chemin à afficher (optionnel)
          * @param {string} driveLetter - Lettre du disque pour ouvrir l'explorateur (optionnel)
          */
-        function showToast(type, title, path, driveLetter) {
+        function showToast(type, title, message, path, driveLetter) {
             // Créer le conteneur de toasts s'il n'existe pas
             let container = document.querySelector('.toast-container');
             if (!container) {
@@ -5948,8 +5952,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 <div class="toast-icon">${icons[type] || '📢'}</div>
                 <div class="toast-content">
                     <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message || ''}</div>
                     ${path ? `
-                        <div class="toast-message">✅ Le chemin a été copié dans votre presse-papiers</div>
                         <div class="toast-path">${escapeHtml(path)}</div>
                         <div class="toast-message" style="margin-top: 12px; font-weight: 600; color: #2563eb;">📂 Pour y accéder dans l'Explorateur Windows :</div>
                         <div class="toast-message" style="padding: 8px 0; line-height: 1.8;">
