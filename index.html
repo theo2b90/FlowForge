@@ -1,8 +1,8 @@
 
+
 <!DOCTYPE html>
 <script>
-    // Supprime le flag d'import auto à chaque chargement de page
-    sessionStorage.removeItem('firebaseImported');
+    // (Ne rien faire ici : la gestion du flag firebaseImported est faite dans onAuthStateChanged)
 </script>
 <!--
 ╔════════════════════════════════════════════════════════════════════════════╗
@@ -3023,11 +3023,11 @@ APPROCHE DE DÉVELOPPEMENT :
                     <!-- bouton export Firebase masqué si non connecté -->
                     <button id="exportFirebaseBtn" onclick="exportDataToFirebase(); closeActionsMenu()" title="Exporter la config sur Firebase" style="display:none;">
                         <span>☁️⬆️</span>
-                        <span>Exporter vers Firebase</span>
+                        <span>Exportation cloud</span>
                     </button>
                     <button id="importFirebaseBtn" onclick="importDataFromFirebase(); closeActionsMenu()" title="Importer la config depuis Firebase" style="display:none;">
                         <span>☁️⬇️</span>
-                        <span>Importer depuis Firebase</span>
+                        <span>Importation cloud</span>
                     </button>
                     <button onclick="handleFullReset(); closeActionsMenu()" title="Réinitialiser complètement l'application">
                         <span>♻️</span>
@@ -3066,12 +3066,19 @@ APPROCHE DE DÉVELOPPEMENT :
                         </div>
                     </details>
                     <div class="separator"></div>
-                    <div class="speed-control" id="autoSyncFirebaseControl" style="display:none;">
-                        <label>☁️ Save auto Cloud</label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="autoSyncFirebaseToggle" onchange="toggleAutoSyncFirebase()" />
-                            Activer
-                        </label>
+                    <div class="speed-control" id="autoSyncFirebaseControl" style="display:block;">
+                            <label>☁️ Save auto Cloud non fonctionnel pour le moment</label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="autoSyncFirebaseToggle" onchange="toggleAutoSyncFirebase()" />
+                                Activer
+                            </label>
+                            <script>
+                                // Synchronise l'état initial du toggle avec la variable JS
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var toggle = document.getElementById('autoSyncFirebaseToggle');
+                                    if (toggle) toggle.checked = autoSyncFirebaseEnabled;
+                                });
+                            </script>
                     </div>
                     <button onclick="openSessionHistory(); closeActionsMenu()" title="Afficher l'historique des sessions">
                         <span>📊</span>
@@ -3156,17 +3163,18 @@ APPROCHE DE DÉVELOPPEMENT :
                 </ul>
 
                 <h3>✔️ 3. Tâches à faire & Objectifs</h3>
-                <ul>
-                    <li><strong>Création de tâche</strong> : Nom, périodicité (quotidienne/hebdo/mensuelle/annuelle/unique), temps dédié par jour.</li>
-                    <li><strong>Synchronisation contexte</strong> : Une tâche nommée identiquement à un contexte se lie automatiquement (insensible à la casse).</li>
-                    <li><strong>Badges intelligents</strong> : Affichage dynamique de la progression (Jour X/Y) avec code couleur (rouge/orange/vert).</li>
-                    <li><strong>Validation manuelle</strong> : Cochez une tâche pour la marquer comme complétée (compte dans les objectifs même sans temps de focus).</li>
-                    <li><strong>Bouton Reset (↺)</strong> : Réinitialise la progression d'une tâche récurrente (repart à Jour 1).</li>
-                    <li><strong>Badge "LIE AU CONTEXTE"</strong> : Confirme qu'une liaison active existe entre tâche et contexte.</li>
-                    <li><strong>Aide compacte</strong> : Le panneau "Comment ça marche ?" est repliable pour gagner de la place.</li>
-                    <li><strong>Objectifs automatiques</strong> : Les tâches génèrent automatiquement des objectifs selon leur périodicité.</li>
-                    <li><strong>Objectifs manuels</strong> : Créez des objectifs personnalisés (journaliers/hebdo/mensuels/annuels) indépendants des tâches.</li>
-                </ul>
+                    <ul>
+                        <li><strong>Création de tâche</strong> : Le formulaire de création est volontairement souple&nbsp;: il n'est pas nécessaire de remplir tous les champs. Vous pouvez saisir uniquement un nom, ou bien ajouter une périodicité (quotidienne, hebdomadaire, mensuelle, annuelle, unique) et/ou un temps dédié par jour selon vos besoins.</li>
+                        <li><strong>Flexibilité et diversité</strong> : Cette liberté vous permet de créer des tâches très variées&nbsp;: simples rappels, routines récurrentes, objectifs ponctuels, jalons de projet, ou même des tâches conceptuelles sans contrainte de temps. Adaptez la structure de chaque tâche à votre méthode de travail, sans vous sentir limité par le formulaire.</li>
+                        <li><strong>Synchronisation contexte</strong> : Une tâche nommée identiquement à un contexte se lie automatiquement (insensible à la casse).</li>
+                        <li><strong>Badges intelligents</strong> : Affichage dynamique de la progression (Jour X/Y) avec code couleur (rouge/orange/vert).</li>
+                        <li><strong>Validation manuelle</strong> : Cochez une tâche pour la marquer comme complétée (compte dans les objectifs même sans temps de focus).</li>
+                        <li><strong>Bouton Reset (↺)</strong> : Réinitialise la progression d'une tâche récurrente (repart à Jour 1).</li>
+                        <li><strong>Badge "LIE AU CONTEXTE"</strong> : Confirme qu'une liaison active existe entre tâche et contexte.</li>
+                        <li><strong>Aide compacte</strong> : Le panneau "Comment ça marche ?" est repliable pour gagner de la place.</li>
+                        <li><strong>Objectifs automatiques</strong> : Les tâches génèrent automatiquement des objectifs selon leur périodicité.</li>
+                        <li><strong>Objectifs manuels</strong> : Créez des objectifs personnalisés (journaliers/hebdo/mensuels/annuels) indépendants des tâches.</li>
+                    </ul>
 
                 <h3>📝 4. Notes, Journal, Traducteur, Dictionnaire</h3>
                 <ul>
@@ -3187,14 +3195,14 @@ APPROCHE DE DÉVELOPPEMENT :
 
                 <h3>⚙️ 5. Menu Actions (accès centralisé)</h3>
                 <ul>
-                    <li><strong>📖 Notice</strong> : Affiche cette aide complète.</li>
-                    <li><strong>⚡ Vitesse</strong> : Accélère le temps (×1 à ×240) pour tester rapidement vos workflows.</li>
-                    <li><strong>🎪 Grâce - Activer</strong> : Active/désactive le système de joker hebdomadaire (valide automatiquement 1 journée par semaine).</li>
-                    <li><strong>📥 Exporter</strong> : Télécharge une sauvegarde JSON complète de toutes vos données.</li>
-                    <li><strong>📤 Importer</strong> : Restaure vos données depuis une sauvegarde JSON (⚠️ écrase les données actuelles).</li>
-                    <li><strong>🎯 Mode Focus</strong> : Masque tous les panneaux sauf les contextes pour concentration maximale.</li>
-                    <li><strong>🧩 Disposition des blocs</strong> : Réglage des largeurs dans une section repliable (Contextes, Insights, Tâches, Notes).</li>
-                    <li><strong>📊 Historique</strong> : Affiche les 30 dernières sessions Pomodoro (contexte, durée, horodatage).</li>
+                    <li><strong>📖 Notice</strong> : Accédez à l’aide complète et à des conseils pour exploiter tout le potentiel de FlowForge.</li>
+                    <li><strong>⚡ Vitesse</strong> : Modifiez la vitesse du temps pour accélérer vos tests ou simuler plusieurs jours de travail en quelques minutes.</li>
+                    <li><strong>🎪 Grâce</strong> : Activez ou désactivez le joker hebdomadaire pour valider une journée difficile d’un simple clic.</li>
+                    <li><strong>📥 Exporter</strong> : Sauvegardez instantanément toutes vos données (tâches, contextes, stats, dico…) dans un fichier sécurisé.</li>
+                    <li><strong>📤 Importer</strong> : Restaurez ou migrez vos données en un clin d’œil (remplace tout l’existant).</li>
+                    <li><strong>🎯 Mode Focus</strong> : Isolez l’essentiel pour travailler sans distraction, en masquant les panneaux secondaires.</li>
+                    <li><strong>🧩 Disposition</strong> : Personnalisez la largeur de chaque bloc pour une interface à votre image.</li>
+                    <li><strong>📊 Historique</strong> : Consultez vos 30 dernières sessions Pomodoro, analysez votre progression et célébrez vos réussites.</li>
                 </ul>
 
                 <h3>🎨 6. Personnalisation interface</h3>
@@ -3369,6 +3377,8 @@ APPROCHE DE DÉVELOPPEMENT :
     // ==================== AUTHENTIFICATION FIREBASE ====================
     let currentUser = null;
     let authMode = 'login'; // ou 'register'
+    // Correction bug : variable de suivi de connexion
+    let wasConnected = false;
 
     function handleAuthBtnClick() {
         if (currentUser) {
@@ -3429,12 +3439,11 @@ APPROCHE DE DÉVELOPPEMENT :
     firebase.auth().onAuthStateChanged(function(user) {
         currentUser = user;
         updateAuthUI();
-        handleAutoSyncAuthChange();
         // Import auto uniquement lors d'une nouvelle connexion
         if (currentUser && !wasConnected) {
             wasConnected = true;
-            const saved = localStorage.getItem('autoSyncFirebaseEnabled') === 'true';
-            if (saved) {
+            // Import auto à la connexion UNIQUEMENT si pas déjà fait dans cette session
+            if (!sessionStorage.getItem('firebaseImported')) {
                 importDataFromFirebase();
             }
         }
@@ -3443,70 +3452,9 @@ APPROCHE DE DÉVELOPPEMENT :
         }
     });
 
-    // Affiche ou masque le toggle auto-sync Firebase selon l'état de connexion
-    function handleAutoSyncAuthChange() {
-        const control = document.getElementById('autoSyncFirebaseControl');
-        const toggle = document.getElementById('autoSyncFirebaseToggle');
-        if (!control) return;
-        if (currentUser) {
-            control.style.display = '';
-            // Restaurer l'état du toggle depuis localStorage
-            const saved = localStorage.getItem('autoSyncFirebaseEnabled') === 'true';
-            if (toggle) {
-                toggle.checked = saved;
-            }
-            // Toujours mettre à jour l'UI (et démarrer l'export auto si activé)
-            updateAutoSyncFirebaseUI();
-        } else {
-            control.style.display = 'none';
-            // Arrêter la sync auto si déco
-            if (toggle) {
-                toggle.checked = false;
-            }
-            updateAutoSyncFirebaseUI();
-        }
-    }
-    // ==================== SYNC AUTO FIREBASE ====================
-    let autoSyncFirebaseInterval = null;
 
-    function toggleAutoSyncFirebase() {
-        const toggle = document.getElementById('autoSyncFirebaseToggle');
-        if (!toggle) return;
-        const enabled = toggle.checked;
-        localStorage.setItem('autoSyncFirebaseEnabled', enabled ? 'true' : 'false');
-        updateAutoSyncFirebaseUI();
-    }
 
-    function updateAutoSyncFirebaseUI() {
-        const toggle = document.getElementById('autoSyncFirebaseToggle');
-        if (!toggle) return;
-        const enabled = toggle.checked;
-        if (enabled && currentUser) {
-            startAutoSyncFirebase();
-        } else {
-            stopAutoSyncFirebase();
-        }
-    }
 
-    function startAutoSyncFirebase() {
-        stopAutoSyncFirebase();
-        // Export immédiat puis toutes les 5 min si connecté
-        if (currentUser) {
-            exportDataToFirebase(); // Export immédiat
-            autoSyncFirebaseInterval = setInterval(() => {
-                exportDataToFirebase();
-            }, 5 * 60 * 1000);
-        }
-    }
-
-    function stopAutoSyncFirebase() {
-        if (autoSyncFirebaseInterval) {
-            clearInterval(autoSyncFirebaseInterval);
-            autoSyncFirebaseInterval = null;
-        }
-    }
-
-    // (Supprimé : l'import auto est maintenant géré dans onAuthStateChanged)
 
     function updateAuthUI() {
         // Pour le bouton dans le menu Actions
@@ -3517,13 +3465,13 @@ APPROCHE DE DÉVELOPPEMENT :
         if (currentUser) {
             btnText.textContent = 'Déconnexion (' + (currentUser.email || 'utilisateur') + ')';
             btnIcon.textContent = '🚪';
-            if (exportFirebaseBtn) exportFirebaseBtn.style.display = '';
             if (importFirebaseBtn) importFirebaseBtn.style.display = '';
+            if (exportFirebaseBtn) exportFirebaseBtn.style.display = '';
         } else {
             btnText.textContent = 'Connexion';
             btnIcon.textContent = '🔑';
-            if (exportFirebaseBtn) exportFirebaseBtn.style.display = 'none';
             if (importFirebaseBtn) importFirebaseBtn.style.display = 'none';
+            if (exportFirebaseBtn) exportFirebaseBtn.style.display = 'none';
         }
     }
 
@@ -3553,32 +3501,30 @@ APPROCHE DE DÉVELOPPEMENT :
     </script>
     <script>
         // ==================== FIREBASE EXPORT/IMPORT ====================
+                // Exportation manuelle vers Firebase (sauvegarde cloud)
+                async function exportDataToFirebase() {
+                    if (!currentUser) {
+                        showToast('error', 'Export Firebase', 'Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
+                        return;
+                    }
+                    try {
+                        // Sauvegarde 100% exhaustive : tout le localStorage
+                        const allData = {};
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            allData[key] = localStorage.getItem(key);
+                        }
+                        await db.collection('flowforge_configs').doc(currentUser.uid).set({
+                            data: allData,
+                            updatedAt: new Date().toISOString()
+                        });
+                        showToast('success', 'Export Firebase', 'Sauvegarde cloud réussie !');
+                    } catch (e) {
+                        showToast('error', 'Export Firebase', '❌ Erreur lors de l\'export Firebase : ' + e.message);
+                    }
+                }
         // Multi-utilisateur : chaque sauvegarde est liée à l'utilisateur connecté (UID)
-        async function exportDataToFirebase() {
-            if (!currentUser) {
-                showToast('error', 'Export Firebase', 'Connecte-toi d\'abord pour exporter ta sauvegarde cloud.');
-                return;
-            }
-            // Toujours forcer la présence de la clé autoSyncFirebaseEnabled
-            if (localStorage.getItem('autoSyncFirebaseEnabled') === null) {
-                localStorage.setItem('autoSyncFirebaseEnabled', 'false');
-            }
-            const allData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                allData[key] = localStorage.getItem(key);
-            }
-            try {
-                await db.collection('flowforge_configs').doc(currentUser.uid).set({
-                    data: allData,
-                    updatedAt: new Date().toISOString(),
-                    email: currentUser.email || null
-                });
-                showToast('success', 'Exportation cloud réussie');
-            } catch (e) {
-                alert('❌ Erreur lors de l\'export Firebase : ' + e.message);
-            }
-        }
+
 
         async function importDataFromFirebase() {
             if (!currentUser) {
@@ -3596,6 +3542,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 localStorage.clear();
                 Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
                 showToast('success','Importation cloud réussie');
+                sessionStorage.setItem('firebaseImported', '1');
                 location.reload();
             } catch (e) {
                 showToast('error', 'Import Firebase', '❌ Erreur lors de l\'import Firebase : ' + e.message);
@@ -3970,6 +3917,27 @@ APPROCHE DE DÉVELOPPEMENT :
         let graceEnabled = localStorage.getItem('graceEnabled') !== 'false';
         let lastGraceWeekKey = localStorage.getItem('lastGraceWeekKey') || '';
         let gracesUsedThisWeek = Number(localStorage.getItem('gracesUsedThisWeek') || 0);
+
+        // Auto Sync Firebase Toggle
+        let autoSyncFirebaseEnabled = localStorage.getItem('autoSyncFirebaseEnabled') !== 'false';
+
+        function toggleAutoSyncFirebase() {
+            const toggle = document.getElementById('autoSyncFirebaseToggle');
+            autoSyncFirebaseEnabled = !!toggle.checked;
+            localStorage.setItem('autoSyncFirebaseEnabled', String(autoSyncFirebaseEnabled));
+        }
+
+        function restoreAutoSyncFirebaseToggle() {
+            const toggle = document.getElementById('autoSyncFirebaseToggle');
+            if (toggle) {
+                toggle.checked = autoSyncFirebaseEnabled;
+            }
+        }
+
+        // Restaurer l'état du toggle après le rendu DOM
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(restoreAutoSyncFirebaseToggle, 0);
+        });
         
         // Largeurs des colonnes
         let columnWidths = {
@@ -5201,7 +5169,10 @@ APPROCHE DE DÉVELOPPEMENT :
                     <div class="contexts-scroll-box">
                     <div class="contexts-grid" id="contextsGridList">
                         ${contexts.map((ctx, index) => {
-                const cyclePosition = ctx.completedPomodoros % 3;
+                // On veut 0 rond actif au début, puis 1, 2, 3, 4 (le 4ème = grande pause)
+                const cyclePosition = ctx.completedPomodoros % 4;
+                const isLongBreakPhase = ctx.phase === 'long-break' || (ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds);
+                const showLongBreakDot = isLongBreakPhase && cyclePosition === 0 && ctx.completedPomodoros > 0;
                 const isLongBreak = ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds;
                 const phaseLabel = ctx.phase === 'work' ? 'Travail' : (isLongBreak ? 'Pause longue' : 'Pause');
                 const phaseClass = ctx.phase === 'work' ? 'phase-work' : (isLongBreak ? 'phase-long-break' : 'phase-break');
@@ -5262,9 +5233,10 @@ APPROCHE DE DÉVELOPPEMENT :
                             ${nextActionHtml}
                             <div class="phase ${phaseClass}">${phaseLabel}</div>
                             <div class="cycle-indicator">
-                                <div class="cycle-dot ${cyclePosition >= 0 ? 'active' : ''}"></div>
                                 <div class="cycle-dot ${cyclePosition >= 1 ? 'active' : ''}"></div>
                                 <div class="cycle-dot ${cyclePosition >= 2 ? 'active' : ''}"></div>
+                                <div class="cycle-dot ${cyclePosition >= 3 ? 'active' : ''}"></div>
+                                <div class="cycle-dot long-break-dot ${showLongBreakDot ? 'active' : ''}" title="Grande pause"></div>
                             </div>
                             <div class="timer ${timerClass}">${formatTime(ctx.remainingSeconds)}</div>
                             <div class="meta">Pomodoros: ${ctx.completedPomodoros} | Focus total: ${formatTime(ctx.totalFocusSeconds)} | Vitesse: x${timeScale}</div>
@@ -6541,6 +6513,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 <details class="sync-help">
                     <summary>💡 Comment ça marche ?</summary>
                     <div class="sync-help-body">
+                        <div class="sync-help-line">• <strong>Formulaire flexible</strong> : Il n'est pas nécessaire de remplir tous les champs pour créer une tâche. Vous pouvez simplement saisir un nom, ou ajouter une périodicité et/ou un temps dédié selon vos besoins.</div>
+                        <div class="sync-help-line">• <strong>Diversité des tâches</strong> : Cette souplesse permet de créer des tâches variées&nbsp;: rappels simples, routines récurrentes, jalons de projet, objectifs ponctuels ou tâches conceptuelles sans durée imposée. Adaptez chaque tâche à votre façon de travailler.</div>
                         <div class="sync-help-line">• <strong>Temps quotidien</strong> : Définissez des minutes par jour (ex: 30 min/jour sur 7 jours = 210 min/semaine).</div>
                         <div class="sync-help-line">• <strong>Liaison automatique</strong> : Nommez la tâche comme votre contexte Pomodoro pour synchroniser la progression.</div>
                         <div class="sync-help-line">• <strong>Suivi intelligent</strong> : La progression se base sur les jours écoulés (le jour actuel ne compte pas comme retard).</div>
@@ -8660,7 +8634,7 @@ APPROCHE DE DÉVELOPPEMENT :
                             localStorage.setItem(key, value);
                         }
                         alert('✅ Sauvegarde importée avec succès ! La page va se recharger.');
-                        location.reload();
+                        // location.reload();
                         return;
                     }
                     // Ancien format (fallback)
@@ -8685,7 +8659,7 @@ APPROCHE DE DÉVELOPPEMENT :
                         if (data.preferences.statCardsOrder) localStorage.setItem('statCardsOrder', JSON.stringify(data.preferences.statCardsOrder));
                     }
                     alert('✅ Sauvegarde importée avec succès! La page va se recharger.');
-                    location.reload();
+                    // location.reload();
                 } catch (error) {
                     alert(`❌ Erreur lors de l'importation: ${error.message}`);
                 }
@@ -9446,8 +9420,8 @@ APPROCHE DE DÉVELOPPEMENT :
         function handleFullReset() {
             if (!confirm('⚠️ Voulez-vous vraiment réinitialiser TOUTE l’application ?\n\nCela va effacer toutes vos données, préférences, tâches, contextes, dictionnaire, notes, historique, etc.\n\nAction IRRÉVERSIBLE.')) return;
             localStorage.clear();
-            alert('✅ Application réinitialisée. La page va se recharger.');
-            location.reload();
+            alert('✅ Application réinitialisée.');
+            // location.reload();
         }
     </script>
 </body>
