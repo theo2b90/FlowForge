@@ -3856,11 +3856,11 @@ APPROCHE DE DÉVELOPPEMENT :
         
         // Ordre des cartes de statistiques (drag-and-drop)
         const defaultStatCardsOrder = [
-            'total-focus', 'active-contexts', 'tasks-completed', 'words-learned',
+            'total-focus', 'avg-per-day', 'active-contexts', 'tasks-completed', 'words-learned',
             'weekly-score', 'daily-objectives', 'weekly-objectives', 'monthly-objectives', 'yearly-objectives'
         ];
         const storedStatCardsOrder = readJsonStorage('statCardsOrder', defaultStatCardsOrder);
-        let statCardsOrder = Array.isArray(storedStatCardsOrder) && storedStatCardsOrder.length === 9
+        let statCardsOrder = Array.isArray(storedStatCardsOrder) && storedStatCardsOrder.length === 10
             ? storedStatCardsOrder
             : defaultStatCardsOrder;
         /*
@@ -8097,6 +8097,66 @@ APPROCHE DE DÉVELOPPEMENT :
                 (vocabWeekPct * 0.25)
             );
             
+            // Calcul de la moyenne de travail par jour depuis le début d'utilisation
+            (function(){
+                try {
+                    const nowTs = Date.now();
+                    const savedFirst = Number(localStorage.getItem('firstUseTs')) || null;
+                    let earliest = Number.isFinite(savedFirst) && savedFirst > 0 ? savedFirst : Infinity;
+
+                    // sessionHistory timestamps (only scan if no savedFirst provided)
+                    if ((!Number.isFinite(savedFirst) || savedFirst <= 0) && Array.isArray(sessionHistory)) {
+                        sessionHistory.forEach(s => {
+                            if (Number.isFinite(Number(s?.timestamp)) && Number(s.timestamp) > 0) earliest = Math.min(earliest, Number(s.timestamp));
+                            if (typeof s?.startTime === 'string' && s.startTime.indexOf('-') !== -1) {
+                                const parts = s.startTime.split('-').map(Number);
+                                if (parts.length >= 3) {
+                                    const d = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+                                    if (!Number.isNaN(d.getTime())) earliest = Math.min(earliest, d.getTime());
+                                }
+                            }
+                        });
+                    }
+
+                    // tasks createdAt / id fallback (only scan if no savedFirst provided)
+                    if ((!Number.isFinite(savedFirst) || savedFirst <= 0) && Array.isArray(tasks)) {
+                        tasks.forEach(t => {
+                            const c = Number(t?.createdAt) || Number(t?.id) || 0;
+                            if (Number.isFinite(c) && c > 0) earliest = Math.min(earliest, c);
+                        });
+                    }
+
+                    // journalEntries (only scan if no savedFirst provided)
+                    if ((!Number.isFinite(savedFirst) || savedFirst <= 0) && Array.isArray(journalEntries)) {
+                        journalEntries.forEach(j => {
+                            const ts = Number(j?.timestamp) || Date.parse(j?.date || '') || 0;
+                            if (Number.isFinite(ts) && ts > 0) earliest = Math.min(earliest, ts);
+                        });
+                    }
+
+                    // dictionary words (only scan if no savedFirst provided)
+                    if ((!Number.isFinite(savedFirst) || savedFirst <= 0) && Array.isArray(dictionary)) {
+                        dictionary.forEach(w => {
+                            const c = Number(w?.createdAt) || 0;
+                            if (Number.isFinite(c) && c > 0) earliest = Math.min(earliest, c);
+                        });
+                    }
+
+                    if (!Number.isFinite(earliest) || earliest === Infinity || earliest <= 0) earliest = nowTs;
+                    // Persist the first use timestamp for future calculs
+                    try { localStorage.setItem('firstUseTs', String(earliest)); } catch (e) {}
+
+                    const msPerDay = 24 * 60 * 60 * 1000;
+                    const daysSince = Math.max(1, Math.floor((nowTs - earliest) / msPerDay) + 1);
+                    const avgDailyMinutes = Math.round((totalFocusMinutes || 0) / daysSince);
+                    // Attach to stats object via temp variables (will be returned below)
+                    // We'll add these to the return object by closure: set temporary props on a local holder
+                    calculateStats._computed = { firstUseTs: earliest, daysSinceFirstUse: daysSince, averageDailyMinutes: avgDailyMinutes };
+                } catch (e) { console.debug('[Stats] avg-per-day compute failed', e); }
+            })();
+
+            const _computed = (calculateStats._computed || {});
+
             return {
                 totalFocusMinutes,
                 totalFocusHours: (totalFocusMinutes / 60).toFixed(1),
@@ -8134,6 +8194,11 @@ APPROCHE DE DÉVELOPPEMENT :
                 weeklyObjectives,
                 monthlyObjectives,
                 yearlyObjectives
+                ,
+                daysSinceFirstUse: _computed.daysSinceFirstUse || 1,
+                averageDailyMinutes: _computed.averageDailyMinutes || Math.round((totalFocusMinutes || 0) / 1),
+                averageDailyReadable: (function(){ const m = _computed.averageDailyMinutes || Math.round((totalFocusMinutes || 0) / 1); const h = Math.floor(m/60); const mm = m%60; return `${h}h ${mm}m`; })(),
+                firstUseTs: _computed.firstUseTs || Date.now()
             };
         }
 
@@ -8285,6 +8350,12 @@ APPROCHE DE DÉVELOPPEMENT :
                         label: 'Temps de focus',
                         value: `${stats.todayFocusHours}h aujourd\'hui`,
                         subtext: `Mois: ${stats.monthFocusHours}h (${stats.monthFocusMinutes} min) • Année: ${stats.yearFocusHours}h (${stats.yearFocusMinutes} min)`
+                    },
+                    'avg-per-day': {
+                        gradient: 'linear-gradient(135deg, #0e76ff 0%, #48b1ff 100%)',
+                        label: 'Moyenne / jour',
+                        value: `${stats.averageDailyReadable}/jour`,
+                        subtext: `Sur ${stats.daysSinceFirstUse} jours depuis le début`
                     },
                     'active-contexts': {
                         gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -8630,6 +8701,12 @@ APPROCHE DE DÉVELOPPEMENT :
             // Réinitialiser les reperes de chaque contexte
             regularityResetBaseline = {};
             localStorage.setItem('regularityResetBaseline', JSON.stringify(regularityResetBaseline));
+
+            // Réinitialiser l'origine des stats (jours depuis) à aujourd'hui
+            try {
+                const nowTs = Date.now();
+                localStorage.setItem('firstUseTs', String(nowTs));
+            } catch (e) {}
 
             // Arrêter tous les timers
             Object.keys(timers).forEach(id => {
