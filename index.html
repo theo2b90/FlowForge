@@ -3138,106 +3138,87 @@ APPROCHE DE DÉVELOPPEMENT :
                 <button class="help-close" onclick="closeHelpNotice()">Fermer</button>
             </div>
             <div class="help-modal-body">
+
+                <h2>Notice d'utilisation</h2>
+                <h3>⏳ Pomodoro vs Flowtime : Choisir sa méthode</h3>
                 <p>
-                    FlowForge est une application de productivité orientée apprentissage, combinant Pomodoro,
-                    tâches récurrentes, objectifs, traduction, dictionnaire personnel et suivi de progression.
+                Le Pomodoro (séquences de 25 minutes suivies de 5 minutes de pause) fragmente la résistance à l’effort. Il offre un cadre idéal pour les tâches atomiques, administratives, répétitives ou morcelables, où l’élan créatif n’est pas le moteur principal. Cette méthode structure le temps et aide à surmonter la procrastination en rendant chaque session accessible et limitée.
+                </p>
+                <p>
+                Le Flowtime privilégie l’immersion profonde : on travaille jusqu’à ressentir une fatigue ou une distraction naturelle, puis on prend une pause proportionnelle à l’effort fourni (environ 1/5 du temps de travail). Cette approche organique est idéale pour le Deep Work : programmation, écriture, conception stratégique… Elle respecte le rythme naturel de concentration et maximise la productivité sur les tâches complexes ou créatives.
+                </p>
+                <p>
+                <b>En résumé</b> : Pomodoro pour avancer par petits blocs sur des tâches découpables, Flowtime pour optimiser l’immersion sur des missions exigeant un focus prolongé.
                 </p>
 
-                <h3>🍅 1. Contextes Pomodoro</h3>
+                <h3>🍅 Contextes</h3>
                 <ul>
-                    <li><strong>+ Nouveau</strong> : Ajoutez un contexte depuis l'en-tête du bloc Contextes.</li>
-                    <li><strong>Contrôles</strong> : Start/Pause/Reset pour gérer vos sessions de 25 minutes.</li>
-                    <li><strong>Cycles automatiques</strong> : Alternance travail → pause courte (5 min) → pause longue (15 min après 4 cycles).</li>
-                    <li><strong>Stigmergie</strong> : Zone de texte pour noter la prochaine action et faciliter la reprise.</li>
+                    <li><strong>+ contexte</strong> : Ajoutez un contexte pour organiser vos sessions.</li>
+                    <li><strong>Contrôles</strong> : Start / Pause / Reset / Delete pour chaque contexte.</li>
+                    <li><strong>Stigmergie</strong> : Notez la prochaine action à faire pour faciliter la reprise.</li>
                     <li><strong>Liaison tâches</strong> : Si une tâche porte le même nom qu'un contexte, la progression se synchronise automatiquement.</li>
                 </ul>
 
-                <h3>📊 2. Insights (Stats / Régularité / Objectifs)</h3>
+                <h3>✔️ Tâches & Objectifs</h3>
                 <ul>
-                    <li><strong>Onglet Stats</strong> : Synthèse du temps de focus, contextes actifs, objectifs complétés (jour/semaine/mois/année).</li>
-                    <li><strong>Score hebdomadaire</strong> : Calcul combiné sur focus, tâches et vocabulaire.</li>
-                    <li><strong>Graphiques</strong> : Visualisation de la progression sur 7 jours, 30 jours, 12 mois et l'année complète.</li>
-                    <li><strong>Onglet Régularité</strong> : Graphique de vos 7 derniers jours de productivité avec détails par jour.</li>
-                    <li><strong>Onglet Objectifs</strong> : Vue d'ensemble des objectifs journaliers, hebdomadaires, mensuels et annuels (automatiques + manuels).</li>
-                    <li><strong>🎪 Grâce (Joker)</strong> : Bouton pour valider automatiquement votre journée (1 fois/semaine, ajoute le temps manquant pour atteindre l'objectif du jour).</li>
-                    <li><strong>Réinitialisation</strong> : Bouton pour remettre les statistiques à zéro (conserve tâches, objectifs et dictionnaire).</li>
+                    <li><strong>Création flexible</strong> : Ajoutez des tâches simples ou récurrentes (quotidien, hebdo, mensuel, annuel).</li>
+                    <li><strong>Validation</strong> : Cochez une tâche pour la marquer comme faite.</li>
+                    <li><strong>Objectifs automatiques</strong> : Générés selon la périodicité des tâches.</li>
+                    <li><strong>Objectifs manuels</strong> : Créez vos propres objectifs indépendamment des tâches.</li>
+                    <li><strong>Badges & progression</strong> : Suivi visuel (rouge/orange/vert) et reset possible.</li>
                 </ul>
 
-                <h3>✔️ 3. Tâches à faire & Objectifs</h3>
-                    <ul>
-                        <li><strong>Création de tâche</strong> : Le formulaire de création est volontairement souple&nbsp;: il n'est pas nécessaire de remplir tous les champs. Vous pouvez saisir uniquement un nom, ou bien ajouter une périodicité (quotidienne, hebdomadaire, mensuelle, annuelle, unique) et/ou un temps dédié par jour selon vos besoins.</li>
-                        <li><strong>Flexibilité et diversité</strong> : Cette liberté vous permet de créer des tâches très variées&nbsp;: simples rappels, routines récurrentes, objectifs ponctuels, jalons de projet, ou même des tâches conceptuelles sans contrainte de temps. Adaptez la structure de chaque tâche à votre méthode de travail, sans vous sentir limité par le formulaire.</li>
-                        <li><strong>Synchronisation contexte</strong> : Une tâche nommée identiquement à un contexte se lie automatiquement (insensible à la casse).</li>
-                        <li><strong>Badges intelligents</strong> : Affichage dynamique de la progression (Jour X/Y) avec code couleur (rouge/orange/vert).</li>
-                        <li><strong>Validation manuelle</strong> : Cochez une tâche pour la marquer comme complétée (compte dans les objectifs même sans temps de focus).</li>
-                        <li><strong>Bouton Reset (↺)</strong> : Réinitialise la progression d'une tâche récurrente (repart à Jour 1).</li>
-                        <li><strong>Badge "LIE AU CONTEXTE"</strong> : Confirme qu'une liaison active existe entre tâche et contexte.</li>
-                        <li><strong>Aide compacte</strong> : Le panneau "Comment ça marche ?" est repliable pour gagner de la place.</li>
-                        <li><strong>Objectifs automatiques</strong> : Les tâches génèrent automatiquement des objectifs selon leur périodicité.</li>
-                        <li><strong>Objectifs manuels</strong> : Créez des objectifs personnalisés (journaliers/hebdo/mensuels/annuels) indépendants des tâches.</li>
-                    </ul>
-
-                <h3>📝 4. Notes, Journal, Traducteur, Dictionnaire</h3>
+                <h3>📊 Statistiques & Historique</h3>
                 <ul>
-                    <li><strong>Notes</strong> : Prise de notes libre avec sauvegarde automatique et export texte (.txt).</li>
-                    <li><strong>Journal</strong> : Ajout d'entrées horodatées (Ctrl+Entrée pour valider) avec export dédié et recherche.</li>
-                    <li><strong>Traducteur bidirectionnel</strong> : Anglais → Français ou Français → Anglais.</li>
-                    <li><strong>Choix d'API</strong> : Sélection de l'API préférée (SimplyTranslate, Lingva, MyMemory, LibreTranslate) avec fallback automatique.</li>
-                    <li><strong>Dictionnaire - Sauvegarde</strong> : Les traductions sont automatiquement enregistrées avec système de révision espacée.</li>
-                    <li><strong>Dictionnaire - États</strong> : 🔴 Rouge (nouveau) → 🟠 Orange (en révision) → 🟢 Vert (maîtrisé).</li>
-                    <li><strong>Dictionnaire - Révision</strong> : Mode pratique FR → EN ou EN → FR (révélation au clic).</li>
-                    <li><strong>Dictionnaire - Recherche</strong> : Barre de recherche en temps réel pour filtrer vos mots.</li>
-                    <li><strong>Dictionnaire - Import CSV</strong> : Importez un fichier CSV (format: mot,traduction,état) pour ajouter des mots en masse.</li>
-                    <li><strong>Dictionnaire - Export CSV</strong> : Téléchargez votre dictionnaire complet au format CSV.</li>
-                    <li><strong>Exemples Linguee</strong> : Bouton dédié sur chaque mot du dictionnaire pour ouvrir des exemples de contexte.</li>
-                    <li><strong>Dictionnaire - Synchronisation</strong> : Les traductions du dictionnaire apparaissent automatiquement quand vous traduisez un mot déjà connu.</li>
-                    <li><strong>Objectif vocabulaire</strong> : Cible hebdomadaire de mots à passer en vert (compte dans le score hebdomadaire à 25%).</li>
+                    <li><strong>Stats focus</strong> : Temps de concentration, contextes actifs, objectifs atteints.</li>
+                    <li><strong>Graphiques</strong> : Progression sur 7j, 30j, 12 mois, année.</li>
+                    <li><strong>Régularité</strong> : Visualisez vos 7 derniers jours de productivité.</li>
+                    <li><strong>Joker Grâce</strong> : Validez une journée difficile (1 fois/semaine).</li>
+                    <li><strong>Réinitialisation</strong> : Remettez les stats à zéro sans perdre vos tâches.</li>
                 </ul>
 
-                <h3>⚙️ 5. Menu Actions (accès centralisé)</h3>
+                <h3>📝 Notes, Journal, Traduction, Dictionnaire</h3>
                 <ul>
-                    <li><strong>📖 Notice</strong> : Accédez à l’aide complète et à des conseils pour exploiter tout le potentiel de FlowForge.</li>
-                    <li><strong>⚡ Vitesse</strong> : Modifiez la vitesse du temps pour accélérer vos tests ou simuler plusieurs jours de travail en quelques minutes.</li>
-                    <li><strong>🎪 Grâce</strong> : Activez ou désactivez le joker hebdomadaire pour valider une journée difficile d’un simple clic.</li>
-                    <li><strong>📥 Exporter</strong> : Sauvegardez instantanément toutes vos données (tâches, contextes, stats, dico…) dans un fichier sécurisé.</li>
-                    <li><strong>📤 Importer</strong> : Restaurez ou migrez vos données en un clin d’œil (remplace tout l’existant).</li>
-                    <li><strong>🎯 Mode Focus</strong> : Isolez l’essentiel pour travailler sans distraction, en masquant les panneaux secondaires.</li>
-                    <li><strong>🧩 Disposition</strong> : Personnalisez la largeur de chaque bloc pour une interface à votre image.</li>
-                    <li><strong>📊 Historique</strong> : Consultez vos 30 dernières sessions Pomodoro, analysez votre progression et célébrez vos réussites.</li>
+                    <li><strong>Notes</strong> : Prise de notes libre, export .txt.</li>
+                    <li><strong>Journal</strong> : Entrées horodatées, recherche, export dédié.</li>
+                    <li><strong>Traducteur</strong> : EN ↔ FR, choix d’API, fallback automatique.</li>
+                    <li><strong>Dictionnaire</strong> : Révision espacée, import/export CSV, mode pratique, exemples Linguee.</li>
+                    <li><strong>Objectif vocabulaire</strong> : Nombre de mots à valider chaque semaine.</li>
                 </ul>
 
-                <h3>🎨 6. Personnalisation interface</h3>
+                <h3>⚙️ Menu Actions & Personnalisation</h3>
                 <ul>
-                    <li><strong>Drag & Drop des grands blocs</strong> : Déplacez les panneaux via les poignées ⋮⋮ (ordre mémorisé).</li>
-                    <li><strong>Hauteurs alignées</strong> : Les 4 grands blocs restent alignés pour une lecture propre.</li>
-                    <li><strong>Textareas redimensionnables</strong> : Glissez le coin inférieur droit pour agrandir Notes/Traducteur.</li>
-                    <li><strong>Sauvegarde automatique</strong> : Toutes vos données et préférences UI sont conservées dans le navigateur.</li>
+                    <li><strong>Notice</strong> : Accès à cette aide à tout moment.</li>
+                    <li><strong>Vitesse</strong> : Accélérez le temps pour tester ou simuler.</li>
+                    <li><strong>Export/Import</strong> : Sauvegardez ou restaurez toutes vos données.</li>
+                    <li><strong>Mode Focus</strong> : Masquez les panneaux secondaires pour travailler sans distraction.</li>
+                    <li><strong>Disposition</strong> : Personnalisez la largeur et l’ordre des blocs (drag & drop).</li>
                 </ul>
 
-                <h3>⌨️ 7. Raccourcis clavier</h3>
+                <h3>⌨️ Raccourcis clavier</h3>
                 <ul>
-                    <li><strong>Ctrl+Shift+E</strong> : Exporter une sauvegarde</li>
-                    <li><strong>Ctrl+Shift+I</strong> : Importer une sauvegarde</li>
-                    <li><strong>Ctrl+Shift+H</strong> : Afficher l'historique des sessions</li>
-                    <li><strong>Ctrl+Shift+F</strong> : Activer/désactiver le mode focus</li>
-                    <li><strong>Ctrl+Entrée</strong> : Valider entrée journal / traduire texte / sauvegarder un snippet</li>
-                    <li><strong>Escape</strong> : Fermer les fenêtres modales ouvertes</li>
+                    <li><strong>Ctrl+Shift+E</strong> : Exporter</li>
+                    <li><strong>Ctrl+Shift+I</strong> : Importer</li>
+                    <li><strong>Ctrl+Shift+H</strong> : Historique</li>
+                    <li><strong>Ctrl+Shift+F</strong> : Mode focus</li>
+                    <li><strong>Ctrl+Entrée</strong> : Valider (journal, trad, snippet)</li>
+                    <li><strong>Escape</strong> : Fermer les fenêtres</li>
                 </ul>
 
-                <h3>📱 8. Installation (Progressive Web App)</h3>
+                <h3>📱 Installation (PWA)</h3>
                 <ul>
-                    <li><strong>Mobile</strong> : Menu navigateur → "Ajouter à l'écran d'accueil" (Chrome/Safari).</li>
-                    <li><strong>Desktop</strong> : Icône d'installation dans la barre d'adresse (Chrome/Edge).</li>
-                    <li><strong>Hors-ligne</strong> : L'application fonctionne sans connexion après installation (Service Worker).</li>
-                    <li><strong>Mise à jour</strong> : Rechargez (Ctrl+F5) en cas de comportement anormal après mise à jour.</li>
+                    <li><strong>Mobile</strong> : Menu navigateur → "Ajouter à l'écran d'accueil"</li>
+                    <li><strong>Desktop</strong> : Icône d'installation dans la barre d'adresse</li>
+                    <li><strong>Hors-ligne</strong> : Fonctionne sans connexion après installation</li>
+                    <li><strong>Mise à jour</strong> : Rechargez (Ctrl+F5) après une mise à jour</li>
                 </ul>
 
                 <p style="margin-top: 20px; padding: 12px; background: #f0f7ff; border-left: 4px solid #0066cc; border-radius: 4px;">
                     <strong>💡 Conseils Pro</strong> :<br>
-                    • Utilisez la vitesse ×120 ou ×240 pour simuler plusieurs jours de travail et visualiser la progression de vos tâches récurrentes.<br>
-                    • La 🎪 Grâce se réinitialise chaque lundi : utilisez-la stratégiquement les jours difficiles !<br>
-                    • Créez des tâches avec le même nom que vos contextes Pomodoro pour un suivi automatique du temps.<br>
-                    • Utilisez le mode pratique du dictionnaire + Linguee pour mémoriser plus vite en contexte réel.
+                    • Utilisez la vitesse ×120 ou ×240 pour simuler plusieurs jours de travail.<br>
+                    • La Grâce se réinitialise chaque lundi : utilisez-la stratégiquement !<br>
+                    • Créez des tâches avec le même nom que vos contextes pour un suivi automatique.<br>
+                    • Le mode pratique du dictionnaire + Linguee accélère la mémorisation en contexte réel.
                 </p>
             </div>
         </div>
@@ -3798,13 +3779,36 @@ APPROCHE DE DÉVELOPPEMENT :
         ║                                                                    ║
         ╚════════════════════════════════════════════════════════════════════╝
         */
-        // Pomodoro
+        // Pomodoro & Flowtime
         const storedContexts = readJsonStorage('contexts', []);
         const contexts = (Array.isArray(storedContexts) ? storedContexts : []).map(normalizeContext);
         const timers = {};
+        // Mode du timer : 'pomodoro' ou 'flowtime'
+        let timerMode = localStorage.getItem('timerMode') || 'pomodoro';
+        function setTimerMode(mode) {
+            if (mode !== 'pomodoro' && mode !== 'flowtime') return;
+            if (timerMode === mode) {
+                renderTimerModeUI();
+                return;
+            }
+            timerMode = mode;
+            localStorage.setItem('timerMode', mode);
+            // Ne pas réinitialiser les compteurs lors du switch de mode !
+            // On garde la valeur courante de chaque timer.
+            // Si on veut forcer un reset, il faut utiliser le bouton reset dédié.
+            renderTimerModeUI();
+            render();
+        }
         let timeScale = Number(localStorage.getItem(TIME_SCALE_STORAGE_KEY)) || 1;
         let weeklyVocabTarget = Number(localStorage.getItem(WEEKLY_VOCAB_TARGET_STORAGE_KEY)) || 10;
         let audioContext;
+
+        // Affichage du mode timer dans l'UI (à compléter plus tard)
+        function renderTimerModeUI() {
+            const el = document.getElementById('timerModeSelector');
+            if (!el) return;
+            el.value = timerMode;
+        }
         
         // Notepad (Notes, Traducteur, Dictionnaire)
         let notepadActiveTab = localStorage.getItem('notepadActiveTab') || 'notes';
@@ -4195,8 +4199,11 @@ APPROCHE DE DÉVELOPPEMENT :
             const breakSeconds = Number.isFinite(ctx.breakSeconds) ? ctx.breakSeconds : DEFAULT_BREAK_SECONDS;
             const longBreakSeconds = Number.isFinite(ctx.longBreakSeconds) ? ctx.longBreakSeconds : DEFAULT_LONG_BREAK_SECONDS;
             const phase = ctx.phase === 'break' ? 'break' : 'work';
-            const fallbackRemaining = phase === 'work' ? workSeconds : breakSeconds;
-            
+            let remainingSeconds = Number.isFinite(ctx.remainingSeconds) ? ctx.remainingSeconds : (phase === 'work' ? workSeconds : breakSeconds);
+            // Correction : si mode Pomodoro, phase work, et remainingSeconds est 0 ou absent, on force à 25:00
+            if (phase === 'work' && (!Number.isFinite(ctx.remainingSeconds) || ctx.remainingSeconds <= 0)) {
+                remainingSeconds = workSeconds;
+            }
             return {
                 id: ctx.id,
                 name: ctx.name || 'Sans nom',
@@ -4206,7 +4213,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 breakSeconds,
                 longBreakSeconds,
                 phase,
-                remainingSeconds: Number.isFinite(ctx.remainingSeconds) ? ctx.remainingSeconds : fallbackRemaining,
+                remainingSeconds,
                 completedPomodoros: Number.isFinite(ctx.completedPomodoros) ? ctx.completedPomodoros : 0,
                 totalFocusSeconds: Number.isFinite(ctx.totalFocusSeconds)
                     ? ctx.totalFocusSeconds
@@ -4674,7 +4681,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     const sessionKey = getTaskPeriodKey(recurrence, sessionDate);
                     return sessionKey === periodKey;
                 })
-                .reduce((sum, session) => sum + getSessionDurationMinutes(session), 0);
+                .reduce((sum, session) => Math.abs(sum + getSessionDurationMinutes(session)), 0);
 
             // Ajouter le temps en cours si applicable
             const todayKey = getTaskPeriodKey(recurrence, now);
@@ -4721,11 +4728,11 @@ APPROCHE DE DÉVELOPPEMENT :
                 })
                 .reduce((sum, s) => {
                     // reuse getSessionDurationMinutes logic from getContextTimeInCurrentPeriod
-                    if (Number.isFinite(s?.durationMinutes)) return sum + Number(s.durationMinutes);
+                    if (Number.isFinite(s?.durationMinutes)) return Math.abs(sum + Number(s.durationMinutes));
                     const raw = Number(s?.duration || 0);
                     if (!Number.isFinite(raw) || raw <= 0) return sum;
-                    if (s && !s.contextName && s.context) return sum + raw / 60;
-                    return sum + raw;
+                    if (s && !s.contextName && s.context) return Math.abs(sum + raw / 60);
+                    return Math.abs(sum + raw);
                 }, 0);
 
             // ajouter le temps en cours si le contexte correspond et est en phase 'work'
@@ -4898,9 +4905,10 @@ APPROCHE DE DÉVELOPPEMENT :
             // Différence
             const diffMinutes = actualMinutes - expectedMinutes;
             const diffHours = Math.abs(diffMinutes) / 60;
+            const roundedDiffMinutes = Math.round(Math.abs(diffMinutes));
             const diffHoursStr = diffHours >= 1 
-                ? `${Math.floor(diffHours)}h${String(Math.abs(diffMinutes) % 60).padStart(2, '0')}`
-                : `${Math.abs(diffMinutes)}min`;
+                ? `${Math.floor(roundedDiffMinutes / 60)}h${String(roundedDiffMinutes % 60).padStart(2, '0')}`
+                : `${roundedDiffMinutes}min`;
 
             let icon, message, color;
             if (diffMinutes > 0) {
@@ -4914,7 +4922,9 @@ APPROCHE DE DÉVELOPPEMENT :
                 message = effectivePassedDays === 0 ? 'Jour 1 en cours !' : 'Pile dans les temps !';
                 color = '#22c55e';
             } else {
-                // En retard sur les jours passés
+                // En retard sur les jours passés :
+                // ATTENTION : on affiche le retard mais on NE DÉCRÉMENTE JAMAIS la progression ou le score !
+                // Le score et la progression ne peuvent qu'augmenter, jamais baisser.
                 icon = '⏰';
                 message = `En retard de ${diffHoursStr}`;
                 color = '#ef4444';
@@ -5109,13 +5119,24 @@ APPROCHE DE DÉVELOPPEMENT :
          */
         function render() {
             syncTimeScaleSelect();
+
             const container = document.getElementById('contextsContainer');
             if (!container) return;
+
+            // Préserver la position de scroll verticale de la liste des contextes
+            let scrollBox = container.querySelector('.contexts-scroll-box');
+            let previousScrollTop = scrollBox ? scrollBox.scrollTop : 0;
 
             if (contexts.length === 0) {
                 container.innerHTML = `
                     <div class="contexts-header">
-                        <span style="display:flex; gap:8px; align-items:center;"><span>🍅</span><span>Contextes Pomodoro</span></span>
+                        <span style="display:flex; gap:8px; align-items:center;">
+                            <label for="timerModeSelector" style="font-weight:bold;">Mode&nbsp;:</label>
+                            <select id="timerModeSelector" onchange="setTimerMode(this.value)" style="padding:4px 8px;border-radius:6px;font-size:1em;">
+                                <option value="pomodoro">Pomodoro</option>
+                                <option value="flowtime">Flowtime</option>
+                            </select>
+                        </span>
                         <span class="contexts-header-actions">
                             <button class="contexts-add-btn" onclick="addContext()">+ Nouveau</button>
                             <span class="panel-drag-handle" draggable="true" title="Glisser pour déplacer le bloc">⋮⋮</span>
@@ -5152,14 +5173,23 @@ APPROCHE DE DÉVELOPPEMENT :
                     </div>
             `;
                 renderChecklist();
+                // Restaurer la position de scroll si possible
+                scrollBox = container.querySelector('.contexts-scroll-box');
+                if (scrollBox) scrollBox.scrollTop = previousScrollTop;
                 return;
             }
 
                 container.innerHTML = `
                     <div class="contexts-header">
-                        <span style="display:flex; gap:8px; align-items:center;"><span>🍅</span><span>Contextes Pomodoro</span></span>
+                        <span style="display:flex; gap:8px; align-items:center;">
+                            <label for="timerModeSelector" style="font-weight:bold;">Mode&nbsp;:</label>
+                            <select id="timerModeSelector" onchange="setTimerMode(this.value)" style="padding:4px 8px;border-radius:6px;font-size:1em;">
+                                <option value="pomodoro">Pomodoro</option>
+                                <option value="flowtime">Flowtime</option>
+                            </select>
+                        </span>
                         <span class="contexts-header-actions">
-                            <button class="contexts-add-btn" onclick="addContext()">+ Nouveau</button>
+                            <button class="contexts-add-btn" onclick="addContext()">+ contexte</button>
                             <span class="panel-drag-handle" draggable="true" title="Glisser pour déplacer le bloc">⋮⋮</span>
                         </span>
                     </div>
@@ -5171,13 +5201,28 @@ APPROCHE DE DÉVELOPPEMENT :
                     <div class="contexts-grid" id="contextsGridList">
                         ${contexts.map((ctx, index) => {
                 // On veut 0 rond actif au début, puis 1, 2, 3, 4 (le 4ème = grande pause)
-                const cyclePosition = ctx.completedPomodoros % 4;
-                const isLongBreakPhase = ctx.phase === 'long-break' || (ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds);
-                const showLongBreakDot = isLongBreakPhase && cyclePosition === 0 && ctx.completedPomodoros > 0;
-                const isLongBreak = ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds;
-                const phaseLabel = ctx.phase === 'work' ? 'Travail' : (isLongBreak ? 'Pause longue' : 'Pause');
-                const phaseClass = ctx.phase === 'work' ? 'phase-work' : (isLongBreak ? 'phase-long-break' : 'phase-break');
-                const timerClass = ctx.phase === 'work' ? '' : (isLongBreak ? 'long-break' : 'break');
+                let cyclePosition = ctx.completedPomodoros % 4;
+                let isLongBreakPhase = ctx.phase === 'long-break' || (ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds);
+                let showLongBreakDot = isLongBreakPhase && cyclePosition === 0 && ctx.completedPomodoros > 0;
+                let isLongBreak = ctx.phase === 'break' && ctx.remainingSeconds > ctx.breakSeconds;
+                let phaseLabel = ctx.phase === 'work' ? 'Travail' : (isLongBreak ? 'Pause longue' : 'Pause');
+                let phaseClass = ctx.phase === 'work' ? 'phase-work' : (isLongBreak ? 'phase-long-break' : 'phase-break');
+                let timerClass = ctx.phase === 'work' ? '' : (isLongBreak ? 'long-break' : 'break');
+                let timerDisplay = formatTime(ctx.remainingSeconds);
+                // --- Affichage Flowtime ---
+                if (timerMode === 'flowtime') {
+                    if (ctx.phase === 'work') {
+                        phaseLabel = 'Travail';
+                        phaseClass = 'phase-work';
+                        timerClass = '';
+                        timerDisplay = formatTime(ctx.flowtimeWorkSeconds || 0);
+                    } else if (ctx.phase === 'break') {
+                        phaseLabel = 'Pause ';
+                        phaseClass = 'phase-break';
+                        timerClass = 'break';
+                        timerDisplay = formatTime(ctx.flowtimeBreakSeconds || 0);
+                    }
+                }
                 const isExpanded = expandedContextIds.length === 0 ? index === 0 : expandedContextIds.includes(String(ctx.id));
 
                 const nextActionHtml = ctx.nextActionEditMode
@@ -5233,14 +5278,19 @@ APPROCHE DE DÉVELOPPEMENT :
                         <div class="context-card">
                             ${nextActionHtml}
                             <div class="phase ${phaseClass}">${phaseLabel}</div>
+                            ${timerMode === 'pomodoro' ? `
                             <div class="cycle-indicator">
                                 <div class="cycle-dot ${cyclePosition >= 1 ? 'active' : ''}"></div>
                                 <div class="cycle-dot ${cyclePosition >= 2 ? 'active' : ''}"></div>
                                 <div class="cycle-dot ${cyclePosition >= 3 ? 'active' : ''}"></div>
                                 <div class="cycle-dot long-break-dot ${showLongBreakDot ? 'active' : ''}" title="Grande pause"></div>
                             </div>
-                            <div class="timer ${timerClass}">${formatTime(ctx.remainingSeconds)}</div>
-                            <div class="meta">Pomodoros: ${ctx.completedPomodoros} | Focus total: ${formatTime(ctx.totalFocusSeconds)} | Vitesse: x${timeScale}</div>
+                            ` : ''}
+                            <div class="timer ${timerClass}">${timerDisplay}</div>
+                            <div class="meta">
+                                ${timerMode === 'pomodoro' ? `Pomodoros: ${ctx.completedPomodoros} | ` : ''}
+                                Focus total: ${formatTime(ctx.totalFocusSeconds)} | Vitesse: x${timeScale}
+                            </div>
                             <div class="controls">
                                 <button onclick='startTimer(${JSON.stringify(ctx.id)})'>${ctx.isRunning ? 'En cours...' : 'Start'}</button>
                                 <button class="secondary" onclick='pauseTimer(${JSON.stringify(ctx.id)})'>Pause</button>
@@ -5283,6 +5333,11 @@ APPROCHE DE DÉVELOPPEMENT :
 
             // Garder la checklist synchronisee avec les contextes actifs
             renderChecklist();
+            // Restaurer la position de scroll si possible
+            scrollBox = container.querySelector('.contexts-scroll-box');
+            if (scrollBox) scrollBox.scrollTop = previousScrollTop;
+            // Correction : synchronise le sélecteur de mode sans relancer render
+            setTimeout(function() { renderTimerModeUI(); }, 0);
         }
 
         function toggleContextExpanded(contextId) {
@@ -5524,6 +5579,10 @@ APPROCHE DE DÉVELOPPEMENT :
          */
         function getCurrentWorkElapsedSeconds(ctx) {
             if (!ctx) return 0;
+            if (timerMode === 'flowtime') {
+                // En Flowtime, on utilise flowtimeWorkSeconds
+                return ctx.flowtimeWorkSeconds || 0;
+            }
             return Math.max(0, ctx.workSeconds - ctx.remainingSeconds);
         }
 
@@ -5602,28 +5661,45 @@ APPROCHE DE DÉVELOPPEMENT :
          */
         function advanceContext(context, deltaSeconds) {
             let remainingToAdvance = deltaSeconds;
-
             while (remainingToAdvance > 0) {
-                // Comptabiliser le temps de focus uniquement en phase de travail
+                // --- Mode Flowtime ---
+                if (timerMode === 'flowtime') {
+                    if (context.phase === 'work') {
+                        if (!context.flowtimeWorkSeconds) context.flowtimeWorkSeconds = 0;
+                        context.flowtimeWorkSeconds += 1;
+                        context.totalFocusSeconds += 1;
+                        context.remainingSeconds = context.flowtimeWorkSeconds;
+                        // Incrémenter les tâches et le score ici UNIQUEMENT pendant le travail
+                        checkTaskTimeMatch && checkTaskTimeMatch(context.name, context.totalFocusSeconds);
+                    } else if (context.phase === 'break') {
+                        if (typeof context.flowtimeBreakSeconds !== 'number' || isNaN(context.flowtimeBreakSeconds)) context.flowtimeBreakSeconds = 0;
+                        context.flowtimeBreakSeconds = Math.max(0, context.flowtimeBreakSeconds - 1);
+                        context.remainingSeconds = context.flowtimeBreakSeconds;
+                        // NE PAS toucher aux tâches ni au score pendant la pause !
+                        if (context.flowtimeBreakSeconds <= 0) {
+                            // Fin de la pause Flowtime : reset automatique et reprise travail
+                            context.phase = 'work';
+                            context.flowtimeWorkSeconds = 0;
+                            context.flowtimeBreakSeconds = 0;
+                            context.remainingSeconds = 0;
+                            playPhaseSound('work');
+                        }
+                    }
+                    remainingToAdvance -= 1;
+                    continue;
+                }
+                // --- Mode Pomodoro classique ---
                 if (context.phase === 'work') {
                     context.totalFocusSeconds += 1;
                 }
-
                 context.remainingSeconds -= 1;
                 remainingToAdvance -= 1;
-
-                // Si le timer n'est pas terminé, continuer normalement
                 if (context.remainingSeconds > 0) {
                     continue;
                 }
-
-                // Transition de phase
                 if (context.phase === 'work') {
-                    // Fin du travail → pause
                     context.phase = 'break';
                     context.completedPomodoros += 1;
-                    
-                    // Enregistrer cette session dans l'historique
                     const now = new Date();
                     const localDateStr = getLocalDateString(now);
                     sessionHistory.push({
@@ -5631,26 +5707,19 @@ APPROCHE DE DÉVELOPPEMENT :
                         contextName: context.name,
                         startTime: localDateStr,
                         timestamp: now.getTime(),
-                        duration: context.workSeconds / 60, // en minutes
+                        duration: context.workSeconds / 60,
                         phase: 'work'
                     });
                     localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
-                    // Distribuer le surplus éventuel vers carryoverMinutes des tâches liées
                     try { distributeCarryoverForContext(context.name); } catch (e) {}
-                    
-                    // Pause longue tous les 4 pomodoros
                     const isLongBreak = context.completedPomodoros % 4 === 0;
                     context.remainingSeconds = isLongBreak ? context.longBreakSeconds : context.breakSeconds;
                 } else {
-                    // Fin de la pause → travail
                     context.phase = 'work';
                     context.remainingSeconds = context.workSeconds;
-
-                    // Nouveau cycle de travail: vider tout repere de regularite restant pour ce contexte.
                     regularityResetBaseline[String(context.id)] = 0;
                     localStorage.setItem('regularityResetBaseline', JSON.stringify(regularityResetBaseline));
                 }
-
                 playPhaseSound(context.phase);
             }
         }
@@ -5662,35 +5731,38 @@ APPROCHE DE DÉVELOPPEMENT :
         function startTimer(contextId) {
             const context = getContextById(contextId);
             if (!context) return;
-            
             ensureAudioContext();
             context.isRunning = true;
-
-            // Demarrer sur la duree de travail complete signifie un cycle neuf: le repere ne doit pas retarder l'affichage en direct.
-            if (context.phase === 'work' && context.remainingSeconds === context.workSeconds) {
-                regularityResetBaseline[String(context.id)] = 0;
-                localStorage.setItem('regularityResetBaseline', JSON.stringify(regularityResetBaseline));
+            // --- Mode Flowtime ---
+            if (timerMode === 'flowtime') {
+                if (typeof context.flowtimeWorkSeconds !== 'number') context.flowtimeWorkSeconds = context.flowtimeWorkSeconds || 0;
+                if (typeof context.flowtimeBreakSeconds !== 'number') context.flowtimeBreakSeconds = 0;
+                if (context.phase === 'work' && context.flowtimeWorkSeconds === 0) {
+                    context.remainingSeconds = 0;
+                }
+            } else {
+                // Pomodoro classique
+                if (context.phase === 'work' && context.remainingSeconds === context.workSeconds) {
+                    regularityResetBaseline[String(context.id)] = 0;
+                    localStorage.setItem('regularityResetBaseline', JSON.stringify(regularityResetBaseline));
+                }
             }
-            
-            // Éviter de créer plusieurs timers pour le même contexte
             if (timers[contextId]) return;
-
             timers[contextId] = setInterval(() => {
                 const activeContext = getContextById(contextId);
                 if (!activeContext || !activeContext.isRunning) return;
-
                 advanceContext(activeContext, timeScale);
-                
-                // Vérifier si une tâche correspondante atteint son temps dédié
-                if (activeContext.phase === 'work') {
+                // Correction : on veut que Flowtime incrémente les tâches à chaque tick de travail
+                if (
+                    (timerMode === 'flowtime' && activeContext.phase === 'work') ||
+                    (timerMode !== 'flowtime' && activeContext.phase === 'work')
+                ) {
                     checkTaskTimeMatch(activeContext.name, activeContext.totalFocusSeconds);
                 }
-
                 save();
                 render();
                 refreshLiveInsightsPanels();
             }, 1000);
-
             save();
             render();
             refreshLiveInsightsPanels();
@@ -5703,23 +5775,35 @@ APPROCHE DE DÉVELOPPEMENT :
         function pauseTimer(contextId) {
             const context = getContextById(contextId);
             if (!context) return;
-            context.isRunning = false;
-            
-            // Suggestion de stigmergie si la next action est vide
-            if (context.phase === 'work' && !context.nextAction.trim()) {
-                setTimeout(() => {
-                    if (confirm('💡 Stigmergie : Souhaitez-vous noter la prochaine action logique avant de vous arrêter ? Cela facilitera votre reprise.')) {
-                        context.nextActionEditMode = true;
-                        save();
-                        render();
-                        setTimeout(() => {
-                            const textarea = document.getElementById(`nextAction_${contextId}`);
-                            if (textarea) textarea.focus();
-                        }, 100);
-                    }
-                }, 300);
+            // --- Mode Flowtime ---
+            if (timerMode === 'flowtime' && context.phase === 'work') {
+                // Avant de passer en pause, on persiste le travail partiel pour ne rien perdre
+                persistPartialWorkForRegularity(context);
+                // Calculer la durée de pause = 1/5 du temps de travail écoulé
+                const workSec = context.flowtimeWorkSeconds || 0;
+                const breakSec = Math.max(1, Math.ceil(workSec / 5));
+                context.phase = 'break';
+                context.flowtimeBreakSeconds = breakSec;
+                context.remainingSeconds = breakSec;
+                // Forcer le timer à continuer de tourner pendant la pause Flowtime
+                context.isRunning = true;
+            } else {
+                context.isRunning = false;
+                // Suggestion de stigmergie si la next action est vide
+                if (context.phase === 'work' && !context.nextAction.trim()) {
+                    setTimeout(() => {
+                        if (confirm('💡 Stigmergie : Souhaitez-vous noter la prochaine action logique avant de vous arrêter ? Cela facilitera votre reprise.')) {
+                            context.nextActionEditMode = true;
+                            save();
+                            render();
+                            setTimeout(() => {
+                                const textarea = document.getElementById(`nextAction_${contextId}`);
+                                if (textarea) textarea.focus();
+                            }, 100);
+                        }
+                    }, 300);
+                }
             }
-            
             save();
             render();
             refreshLiveInsightsPanels();
@@ -5732,19 +5816,22 @@ APPROCHE DE DÉVELOPPEMENT :
         function resetTimer(contextId) {
             const context = getContextById(contextId);
             if (!context) return;
-
-            // Garder les minutes de travail en cours pour la régularité avant le reset.
             persistPartialWorkForRegularity(context);
-            
             clearInterval(timers[contextId]);
             delete timers[contextId];
-            
-            context.phase = 'work';
-            context.remainingSeconds = context.workSeconds;
-            context.completedPomodoros = 0;
-            context.totalFocusSeconds = 0;
-            context.isRunning = false;
-            
+            if (timerMode === 'flowtime') {
+                context.phase = 'work';
+                context.flowtimeWorkSeconds = 0;
+                context.flowtimeBreakSeconds = 0;
+                context.remainingSeconds = 0;
+                context.isRunning = false;
+            } else {
+                context.phase = 'work';
+                context.remainingSeconds = context.workSeconds;
+                context.completedPomodoros = 0;
+                context.totalFocusSeconds = 0;
+                context.isRunning = false;
+            }
             save();
             render();
             refreshLiveInsightsPanels();
@@ -6481,7 +6568,7 @@ APPROCHE DE DÉVELOPPEMENT :
                                     ${isMatching ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : ''}
                                     ${task.expired ? '<span class="task-expired-indicator" style="color:#d44646;margin-left:8px;font-size:11px;">EXPIRÉE</span>' : ''}
                                 </div>
-                                <div class="task-time">${scheduleLabel ? '📅 ' + scheduleLabel : '⏱️ ' + task.dedicatedMinutes + ' min • ' + getRecurrenceLabel(task.recurrence)}</div>
+                                <div class="task-time">${scheduleLabel ? '📅 ' + scheduleLabel : '⏱️ ' + parseInt(Math.round(task.dedicatedMinutes), 10) + ' min • ' + getRecurrenceLabel(task.recurrence)}</div>
                                 ${deadlineHtml}
                                 <!-- Select de récurrence supprimé, l'info est déjà affichée plus haut -->
                                 ${getTaskProgressMessage(task, matchingContext)}
@@ -7974,7 +8061,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 const totalTarget = Number(t.totalTargetMinutes) || 0;
                 // calcule les minutes réelles sur les 7 derniers jours pour cette tâche
                 const matchingContext = contexts.find(c => (String(c.name || '').trim().toLowerCase()) === String(t.name || '').trim().toLowerCase());
-                const weeklyActualMinutes = matchingContext ? getContextTimeInLastNDays({}, matchingContext, 7) : 0;
+                // Désactivation de la fenêtre glissante : on prend tout l'historique
+                const weeklyActualMinutes = matchingContext ? getContextTimeInLastNDays({}, matchingContext, 99999) : 0;
                 if (t.recurrence === 'one-shot') {
                     weeklyTasksTargetMinutes += totalTarget;
                     const completed = isTaskCompletedForRecurrence(tasks.find(tsk => tsk.id === t.id) || {}, 'one-shot');
@@ -8963,10 +9051,7 @@ APPROCHE DE DÉVELOPPEMENT :
                     durationMinutes: Math.round(duration / 60)
                 });
 
-                // Garder les 100 dernières sessions
-                if (sessionHistory.length > 100) {
-                    sessionHistory = sessionHistory.slice(-100);
-                }
+                // Désactivation de la purge automatique : on garde tout l'historique
 
                 localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
                 try { distributeCarryoverForContext(currentSessionContext); } catch (e) {}
