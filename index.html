@@ -5829,10 +5829,14 @@ APPROCHE DE DÉVELOPPEMENT :
                 context.remainingSeconds = 0;
                 context.isRunning = false;
             } else {
+                // Ne pas réinitialiser les statistiques cumulées (moyenne/jour).
+                // L'utilisateur souhaite seulement remettre à zéro le compteur
+                // courant — pas effacer l'historique ni les totaux utilisés
+                // pour le calcul des moyennes.
                 context.phase = 'work';
                 context.remainingSeconds = context.workSeconds;
-                context.completedPomodoros = 0;
-                context.totalFocusSeconds = 0;
+                // Préserver context.completedPomodoros et context.totalFocusSeconds
+                // pour ne pas impacter les stats (moyennes journalières).
                 context.isRunning = false;
             }
             save();
