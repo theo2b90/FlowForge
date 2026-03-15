@@ -3275,7 +3275,10 @@ APPROCHE DE DÉVELOPPEMENT :
         <div class="search-engines-panel">
             <div class="search-engines-header">
                 <div class="search-engines-title">🔍 Gérer les moteurs de recherche</div>
-                <button class="help-close" onclick="closeSearchEnginesModal()">Fermer</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="secondary" onclick="resetSearchEnginesToDefault()" title="Restaurer les moteurs par défaut">Restaurer par défaut</button>
+                    <button class="help-close" onclick="closeSearchEnginesModal()">Fermer</button>
+                </div>
             </div>
             <div class="search-engines-body">
                 <div id="searchEnginesList">
@@ -7438,8 +7441,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 container.innerHTML = `
                     <div class="export-toolbar">
                         <div style="display: flex; gap: 8px;">
-                            <button class="export-btn" onclick="exportDictionary()">📥 Exporter le dictionnaire</button>
-                            <button class="export-btn" onclick="openDictionaryImport()">📤 Importer le dictionnaire</button>
+                            <button class="export-btn" onclick="exportDictionary()">📥 Exporter</button>
+                            <button class="export-btn" onclick="openDictionaryImport()">📤 Importer</button>
                             <button class="delete" onclick="clearAllDictionary()" title="Supprimer tous les mots du dictionnaire">Supprimer tous</button>
                         </div>
                     </div>
@@ -8873,7 +8876,10 @@ APPROCHE DE DÉVELOPPEMENT :
             { name: 'MDN', url: 'https://developer.mozilla.org/search?q={query}' },
             { name: 'npm', url: 'https://www.npmjs.com/search?q={query}' },
             { name: 'DevDocs', url: 'https://devdocs.io/#q={query}' },
-            { name: 'Regex101', url: 'https://regex101.com/?regex={query}' }
+            { name: 'Regex101', url: 'https://regex101.com/?regex={query}' },
+            { name: 'RapidAPI', url: 'https://rapidapi.com/search?query={query}' },
+            { name: 'Postman', url: 'https://www.postman.com/search/?query={query}' },
+            { name: 'data.gouv.fr', url: 'https://www.data.gouv.fr/fr/datasets/?q={query}' },
         ];
 
         function loadSearchEngines() {
@@ -9004,6 +9010,13 @@ APPROCHE DE DÉVELOPPEMENT :
                 saveSearchEngines();
                 renderSearchEnginesList();
             }
+        }
+
+        function resetSearchEnginesToDefault() {
+            if (!confirm('Restaurer les moteurs par défaut ? Cela remplacera vos réglages actuels.')) return;
+            searchEngines = [...defaultSearchEngines];
+            saveSearchEngines();
+            renderSearchEnginesList();
         }
 
         function toggleActionsMenu() {
