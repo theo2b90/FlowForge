@@ -3785,7 +3785,7 @@ APPROCHE DE DÉVELOPPEMENT :
         // Exécuté immédiatement pour éviter un flash de contenu mal formaté
         (function() {
             const defaultWidths = {
-                contexts: 600,
+                    contexts: 400,
                 insights: 240,
                 checklist: 240,
                 notepad: 260
@@ -3985,7 +3985,7 @@ APPROCHE DE DÉVELOPPEMENT :
         
         // Largeurs des colonnes
         let columnWidths = {
-            contexts: 600,
+            contexts: 400,
             insights: 240,
             checklist: 240,
             notepad: 260
@@ -7204,27 +7204,81 @@ APPROCHE DE DÉVELOPPEMENT :
                 alert('Aucune traduction à exporter');
                 return;
             }
-            
-            let content = 'DICTIONNAIRE ANGLAIS → FRANÇAIS\n';
-            content += '='.repeat(50) + '\n\n';
-            
-            dictionary.forEach((word, index) => {
-                content += `${index + 1}. ${word.en}\n`;
-                content += `   → ${word.fr}\n`;
-                content += `   Categorie: ${word.category || 'General'}\n\n`;
+
+            showConfirm('Exporter le dictionnaire', `Voulez-vous vraiment exporter ${dictionary.length} traduction(s) dans un fichier texte ?`, function() {
+                let content = 'DICTIONNAIRE ANGLAIS → FRANÇAIS\n';
+                content += '='.repeat(50) + '\n\n';
+
+                dictionary.forEach((word, index) => {
+                    const levelLabel = (word.level === 'green' ? 'Vert' : (word.level === 'orange' ? 'Orange' : 'Rouge'));
+                    content += `${index + 1}. ${word.en}\n`;
+                    content += `   → ${word.fr}\n`;
+                    content += `   Categorie: ${word.category || 'General'}\n`;
+                    content += `   Niveau: ${levelLabel}\n\n`;
+                });
+
+                content += `\nTotal: ${dictionary.length} traduction(s)`;
+
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `dictionnaire_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             });
-            
-            content += `\nTotal: ${dictionary.length} traduction(s)`;
-            
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `dictionnaire_${new Date().toISOString().slice(0, 10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        }
+
+        /**
+         * Affiche une modale de confirmation simple.
+         * @param {string} title
+         * @param {string} message
+         * @param {function} onConfirm
+         */
+        function showConfirm(title, message, onConfirm) {
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.background = 'rgba(0,0,0,0.4)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '9999';
+
+            const modal = document.createElement('div');
+            modal.className = 'confirm-modal';
+            modal.style.background = '#fff';
+            modal.style.padding = '18px';
+            modal.style.borderRadius = '8px';
+            modal.style.width = '420px';
+            modal.style.boxShadow = '0 6px 24px rgba(0,0,0,0.2)';
+
+            modal.innerHTML = `
+                <div style="font-weight:700; margin-bottom:8px; font-size:15px; color:#111">${escapeHtml(title)}</div>
+                <div style="color:#334155; margin-bottom:16px; font-size:13px; white-space:pre-wrap">${escapeHtml(message)}</div>
+                <div style="display:flex; gap:8px; justify-content:flex-end">
+                    <button class="cancel" id="confirmCancel">Annuler</button>
+                    <button class="confirm-btn" id="confirmOk">Confirmer</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            function cleanup() {
+                try { document.body.removeChild(overlay); } catch (e) {}
+            }
+
+            document.getElementById('confirmCancel').onclick = function() {
+                cleanup();
+            };
+            document.getElementById('confirmOk').onclick = function() {
+                cleanup();
+                try { if (typeof onConfirm === 'function') onConfirm(); } catch (e) { console.error(e); }
+            };
         }
 
         function openDictionaryImport() {
@@ -7245,7 +7299,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 const enMatch = line.match(/^\d+\.\s+(.+)$/);
                 if (enMatch) {
                     if (current && current.en && current.fr) parsed.push(current);
-                    current = { en: enMatch[1].trim(), fr: '', category: 'General' };
+                    // default level = red (rouge) if not specified
+                    current = { en: enMatch[1].trim(), fr: '', category: 'General', level: 'red' };
                     continue;
                 }
 
@@ -7259,6 +7314,13 @@ APPROCHE DE DÉVELOPPEMENT :
                 if (catMatch && current) {
                     current.category = catMatch[1].trim() || 'General';
                 }
+                const levelMatch = line.match(/^(?:Niveau|Level)\s*:\s*(.+)$/i);
+                if (levelMatch && current) {
+                    const raw = levelMatch[1].trim().toLowerCase();
+                    if (/vert/i.test(raw) || raw === 'green') current.level = 'green';
+                    else if (/orange/i.test(raw) || raw === 'orange') current.level = 'orange';
+                    else current.level = 'red';
+                }
             }
 
             if (current && current.en && current.fr) parsed.push(current);
@@ -7268,65 +7330,66 @@ APPROCHE DE DÉVELOPPEMENT :
         function confirmDictionaryImport(fileInput) {
             const file = fileInput?.files?.[0];
             if (!file) return;
+            showConfirm('Importer le dictionnaire', `Importer le fichier ${file.name} et ajouter ses entrées au dictionnaire ?`, function() {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const raw = String(e.target?.result || '');
+                        let imported = [];
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const raw = String(e.target?.result || '');
-                    let imported = [];
+                        // JSON: soit un tableau de mots, soit un objet de sauvegarde complet avec `dictionary`
+                        if (file.name.toLowerCase().endsWith('.json')) {
+                            const data = JSON.parse(raw);
+                            if (Array.isArray(data)) imported = data;
+                            else if (Array.isArray(data?.dictionary)) imported = data.dictionary;
+                            else throw new Error('Format JSON non supporte');
+                        } else {
+                            // Format TXT d'export du dictionnaire
+                            imported = parseDictionaryText(raw);
+                        }
 
-                    // JSON: soit un tableau de mots, soit un objet de sauvegarde complet avec `dictionary`
-                    if (file.name.toLowerCase().endsWith('.json')) {
-                        const data = JSON.parse(raw);
-                        if (Array.isArray(data)) imported = data;
-                        else if (Array.isArray(data?.dictionary)) imported = data.dictionary;
-                        else throw new Error('Format JSON non supporte');
-                    } else {
-                        // Format TXT d'export du dictionnaire
-                        imported = parseDictionaryText(raw);
-                    }
+                        const normalized = imported
+                            .map(normalizeDictionaryWord)
+                            .filter(word => word.en && word.fr);
 
-                    const normalized = imported
-                        .map(normalizeDictionaryWord)
-                        .filter(word => word.en && word.fr);
+                        if (normalized.length === 0) {
+                            alert('Aucune entree valide trouvee dans ce fichier.');
+                            return;
+                        }
 
-                    if (normalized.length === 0) {
-                        alert('Aucune entree valide trouvee dans ce fichier.');
-                        return;
-                    }
+                        const existingKeys = new Set(
+                            dictionary.map(word => `${String(word.en).trim().toLowerCase()}|${String(word.fr).trim().toLowerCase()}`)
+                        );
 
-                    const existingKeys = new Set(
-                        dictionary.map(word => `${String(word.en).trim().toLowerCase()}|${String(word.fr).trim().toLowerCase()}`)
-                    );
+                        let addedCount = 0;
+                        normalized.forEach(word => {
+                            const key = `${String(word.en).trim().toLowerCase()}|${String(word.fr).trim().toLowerCase()}`;
+                            if (existingKeys.has(key)) return;
 
-                    let addedCount = 0;
-                    normalized.forEach(word => {
-                        const key = `${String(word.en).trim().toLowerCase()}|${String(word.fr).trim().toLowerCase()}`;
-                        if (existingKeys.has(key)) return;
-
-                        ensureDictionaryCategory(word.category || 'General');
-                        dictionary.push({
-                            ...word,
-                            id: Date.now() + Math.floor(Math.random() * 100000)
+                            ensureDictionaryCategory(word.category || 'General');
+                            dictionary.push({
+                                ...word,
+                                id: Date.now() + Math.floor(Math.random() * 100000)
+                            });
+                            existingKeys.add(key);
+                            addedCount++;
                         });
-                        existingKeys.add(key);
-                        addedCount++;
-                    });
 
-                    localStorage.setItem('dictionary', JSON.stringify(dictionary));
-                    saveDictionaryCategories();
-                    refreshLiveInsightsPanels();
-                    renderNotepad();
+                        localStorage.setItem('dictionary', JSON.stringify(dictionary));
+                        saveDictionaryCategories();
+                        refreshLiveInsightsPanels();
+                        renderNotepad();
 
-                    alert(`Import termine: ${addedCount} mot(s) ajoute(s).`);
-                } catch (error) {
-                    alert(`Erreur d'import du dictionnaire: ${error.message}`);
-                } finally {
-                    if (fileInput) fileInput.value = '';
-                }
-            };
+                        alert(`Import termine: ${addedCount} mot(s) ajoute(s).`);
+                    } catch (error) {
+                        alert(`Erreur d'import du dictionnaire: ${error.message}`);
+                    } finally {
+                        if (fileInput) fileInput.value = '';
+                    }
+                };
 
-            reader.readAsText(file);
+                reader.readAsText(file);
+            });
         }
         
         // ==================== FONCTIONS NOTES ====================
@@ -7346,43 +7409,47 @@ APPROCHE DE DÉVELOPPEMENT :
          * Exporte les notes dans un fichier texte
          */
         function exportNotes() {
-            const blob = new Blob([generalNotes], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `notes_${new Date().toISOString().slice(0, 10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            showConfirm('Exporter les notes', 'Télécharger vos notes générales dans un fichier texte ?', function() {
+                const blob = new Blob([generalNotes], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `notes_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
         }
 
         /**
          * Exporte le journal dans un fichier texte dédié.
          */
         function exportJournal() {
-            let content = 'JOURNAL DE BORD\n';
-            content += '='.repeat(40) + '\n\n';
+            showConfirm('Exporter le journal', 'Télécharger le journal de bord dans un fichier texte ?', function() {
+                let content = 'JOURNAL DE BORD\n';
+                content += '='.repeat(40) + '\n\n';
 
-            const entries = journalEntries.slice().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            if (entries.length === 0) {
-                content += 'Aucune entree journal.\n';
-            } else {
-                entries.forEach((entry, index) => {
-                    content += `${index + 1}. ${entry.date || ''}\n`;
-                    content += `${entry.text || ''}\n\n`;
-                });
-            }
+                const entries = journalEntries.slice().sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                if (entries.length === 0) {
+                    content += 'Aucune entree journal.\n';
+                } else {
+                    entries.forEach((entry, index) => {
+                        content += `${index + 1}. ${entry.date || ''}\n`;
+                        content += `${entry.text || ''}\n\n`;
+                    });
+                }
 
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `journal_${new Date().toISOString().slice(0, 10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `journal_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
         }
         
         /**
