@@ -1439,10 +1439,14 @@ APPROCHE DE DÉVELOPPEMENT :
             padding: 12px; 
             margin-bottom: 10px; 
             border-radius: 6px; 
-            border-left: 3px solid #28a745; 
+            border-left: 3px solid #e2e8f0; /* neutre par défaut */
             display: flex; 
             align-items: flex-start; 
             gap: 10px; 
+        }
+
+        .goal-item.linked {
+            border-left-color: #f59e42; /* orange pour objectifs liés */
         }
         
         .goal-item.completed { 
@@ -1467,6 +1471,34 @@ APPROCHE DE DÉVELOPPEMENT :
             font-size: 13px; 
             color: #333; 
             line-height: 1.5; 
+        }
+
+        /* Styling additions for goal details */
+        .goal-meta { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            margin-top: 4px;
+            color: #475569;
+            font-size: 12px;
+        }
+        .goal-time { color: #475569; font-size: 12px; }
+        .goal-time .time-value { font-weight: 700; color: #0f172a; margin-right:6px; }
+        .goal-grace { color: #334155; font-size: 11px; }
+        .goal-grace .grace-time { color: #b45309; font-weight: 700; margin-right:6px; }
+        .goal-progress { color: #0f172a; font-weight: 700; margin-left:6px; }
+
+        /* Context name badge inside goals */
+        .context-badge {
+            display: inline-block;
+            background: #fff7ed;
+            color: #b45309;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 8px;
+            vertical-align: middle;
         }
         
         .goal-actions { 
@@ -6748,7 +6780,7 @@ APPROCHE DE DÉVELOPPEMENT :
                         <div class="sync-help-line">• <strong>Temps quotidien</strong> : Définissez des minutes par jour (ex: 30 min/jour sur 7 jours = 210 min/semaine).</div>
                         <div class="sync-help-line">• <strong>Liaison automatique</strong> : Nommez la tâche comme votre contexte Pomodoro pour synchroniser la progression.</div>
                         <div class="sync-help-line">• <strong>Suivi intelligent</strong> : La progression se base sur les jours écoulés (le jour actuel ne compte pas comme retard).</div>
-                        <div class="sync-help-line">• <strong>Badge de liaison</strong> : Le badge <span style="background: #e3f2fd; padding: 2px 6px; border-radius: 3px; font-size: 11px;">LIE AU CONTEXTE</span> indique une synchronisation active.</div>
+                        <div class="sync-help-line">• <strong>Badge de liaison</strong> : La bordure gauche orange indique qu'un objectif est lié au contexte correspondant.</div>
                     </div>
                 </details>
                 ${tasksHtml}
@@ -8629,13 +8661,15 @@ APPROCHE DE DÉVELOPPEMENT :
                         ? group.map(goal => {
                             // Plus de deadline pour les objectifs auto (liés aux tâches)
                             return `
-                                <div class="goal-item ${goal.completed ? 'completed' : ''}">
+                                <div class="goal-item${goal.isLinked ? ' linked' : ''} ${goal.completed ? 'completed' : ''}">
                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                        <div class="goal-text" style="text-decoration: none;">${escapeHtml(goal.name)}</div>
-                                        ${goal.isLinked ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : '<span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 8px;">NON LIEE</span>'}
+                                        <div class="goal-text" style="text-decoration: none;">${goal.isLinked ? '<span class="context-badge">' + escapeHtml(goal.name) + '</span>' : escapeHtml(goal.name)}</div>
+                                        
                                     </div>
-                                    <div style="font-size: 12px; color: #475569; margin-bottom: 6px; margin-top:4px;">${goal.actualMinutes} min / ${goal.totalTargetMinutes} min (${goal.progressPct}%)</div>
-                                    <div style="font-size: 11px; color: #334155; margin-bottom: 6px; margin-top:4px;">Grâce: ${formatMinutesToHM(goal.graceMinutes || 0)} (${goal.gracePercent || 0}%)</div>
+                                    <div class="goal-meta">
+                                        <div class="goal-time"><span class="time-value">${formatMinutesToHM(goal.actualMinutes)}</span><span class="time-total">/ ${goal.totalTargetMinutes} min</span><span class="goal-progress">${goal.progressPct}%</span></div>
+                                        <div class="goal-grace">Grâce: <span class="grace-time">${formatMinutesToHM(goal.graceMinutes || 0)}</span><span class="grace-pct">(${goal.gracePercent || 0}%)</span></div>
+                                    </div>
                                     <div style="height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
                                         <div style="height: 100%; width: ${goal.progressPct}%; background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);"></div>
                                     </div>
@@ -8702,10 +8736,10 @@ APPROCHE DE DÉVELOPPEMENT :
                             }
                         }
                         return `
-                        <div class="goal-item ${isCompleted ? 'completed' : ''}">
+                        <div class="goal-item${goal.isLinked ? ' linked' : ''} ${isCompleted ? 'completed' : ''}">
                             <input type="checkbox" class="goal-checkbox" ${isCompleted ? 'checked' : ''}
                                    onchange="toggleManualGoal('${goal.period}', ${goal.id})">
-                            <div class="goal-text">${escapeHtml(goal.text)} <span style="font-size: 10px; color: #64748b;">${periodMeta[goal.period].icon} ${periodMeta[goal.period].label}</span></div>
+                            <div class="goal-text">${goal.isLinked ? '<span class="context-badge">' + escapeHtml(goal.text) + '</span>' : escapeHtml(goal.text)} <span style="font-size: 10px; color: #64748b;">${periodMeta[goal.period].icon} ${periodMeta[goal.period].label}</span></div>
                             ${deadlineHtml}
                             <div class="goal-actions">
                                 <button class="delete" onclick="deleteManualGoal('${goal.period}', ${goal.id})">Supprimer</button>
