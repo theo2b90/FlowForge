@@ -4694,6 +4694,63 @@ APPROCHE DE DÉVELOPPEMENT :
         }
 
         /**
+         * Calcule les minutes issues de sessions marquées `isGrace: true`
+         * pour la période courante d'une tâche liée à un contexte.
+         * @param {Object} task
+         * @param {Object} context
+         * @returns {number} minutes
+         */
+        function getGraceMinutesForTaskPeriod(task, context) {
+            if (!task || !context || !Array.isArray(sessionHistory)) return 0;
+            const recurrence = task.recurrence || 'one-shot';
+
+            const taskStartTimestamp = Number.isFinite(task.createdAt)
+                ? task.createdAt
+                : (Number.isFinite(task.id) ? task.id : 0);
+
+            const normalizeName = (value) => String(value || '').trim().toLowerCase();
+
+            const getSessionContextName = (session) => normalizeName(session?.contextName || session?.context);
+
+            const getSessionDurationMinutes = (session) => {
+                if (Number.isFinite(session?.durationMinutes)) return Number(session.durationMinutes);
+                const raw = Number(session?.duration || 0);
+                if (!Number.isFinite(raw) || raw <= 0) return 0;
+                if (session && !session.contextName && session.context) return raw / 60;
+                return raw;
+            };
+
+            const getSessionDate = (session) => {
+                if (Number.isFinite(session?.timestamp) && session.timestamp > 0) return new Date(session.timestamp);
+                if (typeof session?.startTime === 'string' && session.startTime.includes('-')) {
+                    const [y, m, d] = session.startTime.split('-').map(Number);
+                    return new Date(y, (m || 1) - 1, d || 1);
+                }
+                return null;
+            };
+
+            const now = new Date();
+            const periodKey = getTaskPeriodKey(recurrence, now);
+            const targetContextName = normalizeName(context.name);
+
+            const minutes = sessionHistory
+                .filter(s => {
+                    if (!s || !s.isGrace) return false;
+                    if (getSessionContextName(s) !== targetContextName) return false;
+                    if (!isSessionAfterRegularityReset(s)) return false;
+                    const sd = getSessionDate(s);
+                    if (!sd || Number.isNaN(sd.getTime())) return false;
+                    if (taskStartTimestamp > 0 && sd.getTime() < taskStartTimestamp) return false;
+                    const sessionKey = getTaskPeriodKey(recurrence, sd);
+                    return sessionKey === periodKey;
+                })
+                .reduce((sum, s) => Math.abs(sum + getSessionDurationMinutes(s)), 0);
+
+            // Ajouter le temps en cours si applicable (mais les sessions en cours ne sont marquées isGrace)
+            return minutes;
+        }
+
+        /**
          * Calcule les minutes travaillées sur le contexte lié à une tâche sur les derniers N jours.
          * Utilisé pour le calcul précis du score hebdomadaire.
          * @param {Object} task
@@ -5025,28 +5082,42 @@ APPROCHE DE DÉVELOPPEMENT :
          *    - Consommée même si objectif déjà atteint (0m ajoutés)
          */
         function applyGrace() {
-            if (!graceEnabled) { showToast('warning', 'La Grâce est désactivée'); return; }
-            if (gracesUsedThisWeek >= 1) { showToast('warning', 'La Grâce a déjà été utilisée cette semaine'); return; }
-
+            // Assurer le reset hebdomadaire avant toute vérification
             checkAndResetGraceWeekly();
+            if (!graceEnabled) { showToast('warning', 'La Grâce est désactivée'); return; }
             if (gracesUsedThisWeek >= 1) { showToast('warning', 'La Grâce a déjà été utilisée cette semaine'); return; }
 
             const now = new Date();
             const todayKey = getLocalDateString(now);
             const timestamp = now.getTime();
 
-            // Récupérer toutes les tâches journalières
-            const dailyTasks = tasks.filter(t => t.recurrence === 'daily');
-            if (!dailyTasks.length) {
-                // Même si aucune tâche, consommer la grâce
+            // Récupérer les tâches actives aujourd'hui (non expirées et prévues aujourd'hui si scheduleDays)
+            const todayWeekday = new Date().getDay(); // 0=Sun..6=Sat
+            const activeTasks = (Array.isArray(tasks) ? tasks : []).filter(t => {
+                if (t.expired) return false;
+                if (Array.isArray(t.scheduleDays) && t.scheduleDays.length > 0) {
+                    return t.scheduleDays.includes(todayWeekday);
+                }
+                return true;
+            });
+            if (!activeTasks.length) {
+                // Même si aucune tâche, consommer la grâce et mettre à jour l'UI
                 gracesUsedThisWeek = 1;
                 localStorage.setItem('gracesUsedThisWeek', '1');
+                // Marquer la journée comme étoilée (grâce) pour ne pas pénaliser les stats
+                if (!Array.isArray(dailyStars)) dailyStars = [];
+                if (!dailyStars.includes(todayKey)) {
+                    dailyStars.push(todayKey);
+                    localStorage.setItem('dailyStars', JSON.stringify(dailyStars));
+                }
+                showToast('success', 'Grâce utilisée', 'Journée marquée — non pénalisée');
+                render(); renderInsights();
                 return;
             }
 
-            // Grouper les tâches journalières par contexte lié (nom de contexte exact, insensible casse)
+            // Grouper les tâches actives par contexte lié (nom de contexte exact, insensible casse)
             const tasksByContext = {};
-            dailyTasks.forEach(t => {
+            activeTasks.forEach(t => {
                 const taskName = String(t.name || '').trim();
                 const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === taskName.toLowerCase());
                 if (matchedContext) {
@@ -5054,49 +5125,97 @@ APPROCHE DE DÉVELOPPEMENT :
                     tasksByContext[key] = tasksByContext[key] || [];
                     tasksByContext[key].push(t);
                 } else {
-                    // Pas de contexte lié : on marque la tâche comme complétée pour aujourd'hui
-                    t.completedAt = timestamp;
+                    // Pas de contexte lié : marquer complétée uniquement si la tâche demande du temps
+                    if (Number(t.dedicatedMinutes) > 0) {
+                        t.completedAt = timestamp;
+                    }
                 }
             });
 
-            // Pour chaque contexte lié, calculer le total de minutes nécessaires pour satisfaire toutes les tâches journalières
-            Object.keys(tasksByContext).forEach(ctxName => {
-                const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(ctxName || '').trim().toLowerCase());
-                if (!matchedContext) return;
-
-                // Arrondir les minutes du jour
-                const minutesToday = Math.round(getContextTimeInLastNDays({}, matchedContext, 1));
-
-                // Somme des besoins pour chaque tâche relative au minutesToday initial
-                const totalNeeded = tasksByContext[ctxName].reduce((sum, t) => {
-                    const need = Math.max(0, Math.round(Number(t.dedicatedMinutes) || 0) - minutesToday);
-                    return sum + need;
-                }, 0);
-
-                const totalNeededRounded = Math.round(totalNeeded);
-                if (totalNeededRounded > 0) {
-                    // Appliquer une session unique cumulée pour ce contexte
-                    matchedContext.totalFocusSeconds = (Number(matchedContext.totalFocusSeconds) || 0) + totalNeededRounded * 60;
-                    sessionHistory.push({
-                        id: Date.now() + Math.floor(Math.random() * 1000),
-                        contextName: matchedContext.name,
-                        startTime: todayKey,
-                        timestamp,
-                        duration: totalNeededRounded,
-                        durationMinutes: totalNeededRounded,
-                        phase: 'work'
-                    });
-                    try { distributeCarryoverForContext(matchedContext.name); } catch (e) {}
-                }
+            // Marquer explicitement toutes les tâches actives comme complétées pour aujourd'hui
+            // (La grâce consomme la validation même si 0 minutes ont été ajoutées)
+            activeTasks.forEach(t => {
+                try {
+                    if (Number(t.dedicatedMinutes) > 0) {
+                        t.completedAt = timestamp;
+                    }
+                } catch (e) {}
             });
+
+            // Si aucune tâche ne matche un contexte, on applique la grâce au premier contexte disponible
+            if (Object.keys(tasksByContext).length === 0) {
+                if (contexts.length > 0) {
+                    const primary = contexts[0];
+                    const minutesToday = Math.round(getContextTimeInLastNDays({}, primary, 1));
+                    const totalNeeded = activeTasks.reduce((sum, t) => {
+                        const need = Math.max(0, Math.round(Number(t.dedicatedMinutes) || 0) - minutesToday);
+                        return sum + need;
+                    }, 0);
+                    const totalNeededRounded = Math.round(totalNeeded);
+                    if (totalNeededRounded > 0) {
+                        primary.totalFocusSeconds = (Number(primary.totalFocusSeconds) || 0) + totalNeededRounded * 60;
+                        sessionHistory.push({
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            contextName: primary.name,
+                            startTime: todayKey,
+                            timestamp,
+                                duration: totalNeededRounded,
+                                durationMinutes: totalNeededRounded,
+                                isGrace: true,
+                            phase: 'work'
+                        });
+                        try { distributeCarryoverForContext(primary.name); } catch (e) {}
+                    }
+                }
+            } else {
+                // Pour chaque contexte lié, calculer le total de minutes nécessaires pour satisfaire toutes les tâches journalières
+                Object.keys(tasksByContext).forEach(ctxName => {
+                    const matchedContext = contexts.find(c => String(c.name || '').trim().toLowerCase() === String(ctxName || '').trim().toLowerCase());
+                    if (!matchedContext) return;
+
+                    // Arrondir les minutes du jour
+                    const minutesToday = Math.round(getContextTimeInLastNDays({}, matchedContext, 1));
+
+                    // Somme des besoins pour chaque tâche relative au minutesToday initial
+                    const totalNeeded = tasksByContext[ctxName].reduce((sum, t) => {
+                        const need = Math.max(0, Math.round(Number(t.dedicatedMinutes) || 0) - minutesToday);
+                        return sum + need;
+                    }, 0);
+
+                    const totalNeededRounded = Math.round(totalNeeded);
+                    if (totalNeededRounded > 0) {
+                        // Appliquer une session unique cumulée pour ce contexte
+                        matchedContext.totalFocusSeconds = (Number(matchedContext.totalFocusSeconds) || 0) + totalNeededRounded * 60;
+                        sessionHistory.push({
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            contextName: matchedContext.name,
+                            startTime: todayKey,
+                            timestamp,
+                                duration: totalNeededRounded,
+                                durationMinutes: totalNeededRounded,
+                                isGrace: true,
+                            phase: 'work'
+                        });
+                        try { distributeCarryoverForContext(matchedContext.name); } catch (e) {}
+                    }
+                });
+            }
 
             // Persist changes (tâches, contextes, sessions)
-            localStorage.setItem('tasks', JSON.stringify(tasks));
+            try { localStorage.setItem('tasks', JSON.stringify(tasks)); } catch (e) {}
             localStorage.setItem('contexts', JSON.stringify(contexts));
             localStorage.setItem('sessionHistory', JSON.stringify(sessionHistory));
 
             gracesUsedThisWeek = 1;
             localStorage.setItem('gracesUsedThisWeek', '1');
+            // Marquer la journée comme étoilée (grâce) pour ne pas pénaliser les stats
+            if (!Array.isArray(dailyStars)) dailyStars = [];
+            if (!dailyStars.includes(todayKey)) {
+                dailyStars.push(todayKey);
+                localStorage.setItem('dailyStars', JSON.stringify(dailyStars));
+            }
+            // Grâce appliquée — rendu et persistance déjà effectués
+            showToast('success', 'Grâce appliquée', 'La journée sera ignorée dans les pénalités statistiques.');
             render();
             renderInsights();
         }
@@ -8077,7 +8196,24 @@ APPROCHE DE DÉVELOPPEMENT :
                     try { console.debug('[WeeklyScore] one-shot', { id: t.id, name: t.name, totalTarget, completed, weeklyActualMinutes }); } catch (e) {}
                 } else {
                     const weeklyTarget = totalTarget * (7 / periodDays);
-                    const weeklyCompleted = Math.min(weeklyTarget, weeklyActualMinutes);
+                    // Si un contexte lié existe, on compte les minutes réelles
+                    // Sinon, accepter une validation manuelle (completedAt) pour considérer la tâche complétée
+                    let weeklyCompleted = 0;
+                    if (matchingContext) {
+                        weeklyCompleted = Math.min(weeklyTarget, weeklyActualMinutes);
+                    } else {
+                        // vérifier si la tâche liée (dans `tasks`) est marquée complétée pour la période
+                        try {
+                            const origTask = tasks.find(tsk => String(tsk.id) === String(t.id) || Number(tsk.id) === Number(t.id));
+                            if (origTask && isTaskCompletedForRecurrence(origTask, t.recurrence || 'daily')) {
+                                weeklyCompleted = weeklyTarget;
+                            } else {
+                                weeklyCompleted = 0;
+                            }
+                        } catch (e) {
+                            weeklyCompleted = 0;
+                        }
+                    }
                     weeklyTasksTargetMinutes += weeklyTarget;
                     weeklyTasksCompletedMinutes += weeklyCompleted;
                     try { console.debug('[WeeklyScore] recurrent', { id: t.id, name: t.name, recurrence: t.recurrence, totalTarget, weeklyActualMinutes, weeklyTarget, weeklyCompleted, progressPct: t.progressPct }); } catch (e) {}
@@ -8103,6 +8239,18 @@ APPROCHE DE DÉVELOPPEMENT :
                 (tasksWeekPct * 0.35) +
                 (vocabWeekPct * 0.25)
             );
+            // Calcul des minutes ajoutées par Grâce (sessions marquées `isGrace: true`)
+            let graceMinutesTotal = 0;
+            try {
+                if (Array.isArray(sessionHistory)) {
+                    graceMinutesTotal = sessionHistory.reduce((sum, s) => {
+                        if (!s) return sum;
+                        const m = Number(s.durationMinutes || s.duration || 0) || 0;
+                        return sum + (s.isGrace ? m : 0);
+                    }, 0);
+                }
+            } catch (e) { graceMinutesTotal = 0; }
+            const gracePercentOfTotal = (totalFocusMinutes > 0) ? Math.round((graceMinutesTotal / Math.max(1, totalFocusMinutes)) * 100) : 0;
             
             // Calcul de la moyenne de travail par jour depuis le début d'utilisation
             (function(){
@@ -8202,6 +8350,8 @@ APPROCHE DE DÉVELOPPEMENT :
                 monthlyObjectives,
                 yearlyObjectives
                 ,
+                graceMinutesTotal,
+                gracePercentOfTotal,
                 daysSinceFirstUse: _computed.daysSinceFirstUse || 1,
                 averageDailyMinutes: _computed.averageDailyMinutes || Math.round((totalFocusMinutes || 0) / 1),
                 averageDailyReadable: (function(){ const m = _computed.averageDailyMinutes || Math.round((totalFocusMinutes || 0) / 1); const h = Math.floor(m/60); const mm = m%60; return `${h}h ${mm}m`; })(),
@@ -8280,6 +8430,11 @@ APPROCHE DE DÉVELOPPEMENT :
                 const actualMinutes = Math.max(0, Math.round(actualMinutesRaw));
                 const progressPct = Math.min(100, Math.round((actualMinutes / totalTargetMinutes) * 100));
 
+                // Calcul des minutes de Grâce pour cette tâche (si liée à un contexte)
+                const graceMinutesRaw = matchingContext ? getGraceMinutesForTaskPeriod(task, matchingContext) : 0;
+                const graceMinutes = Math.max(0, Math.round(graceMinutesRaw));
+                const gracePercent = totalTargetMinutes > 0 ? Math.min(100, Math.round((graceMinutes / totalTargetMinutes) * 100)) : 0;
+
                 // La complétion d'une tâche est vraie si sa progression temporelle atteint la cible.
                 // La coche manuelle (popup) doit uniquement marquer la tâche pour la période "daily"
                 // (coche journalière temporaire), ou pour les tâches one-shot.
@@ -8297,6 +8452,8 @@ APPROCHE DE DÉVELOPPEMENT :
                     progressPct,
                     isLinked: Boolean(matchingContext),
                     completed: isCompleted,
+                    graceMinutes,
+                    gracePercent,
                     deadline: task.deadline || null,
                     createdAt: task.createdAt || null
                 };
@@ -8356,13 +8513,13 @@ APPROCHE DE DÉVELOPPEMENT :
                         gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         label: 'Temps de focus',
                         value: `${stats.todayFocusHours}h aujourd\'hui`,
-                        subtext: `Mois: ${stats.monthFocusHours}h (${stats.monthFocusMinutes} min) • Année: ${stats.yearFocusHours}h (${stats.yearFocusMinutes} min)`
+                        subtext: `Mois: ${stats.monthFocusHours}h (${stats.monthFocusMinutes} min) • Année: ${stats.yearFocusHours}h (${stats.yearFocusMinutes} min) • Grâce: ${stats.graceMinutesTotal || 0} min (${stats.gracePercentOfTotal || 0}%)`
                     },
                     'avg-per-day': {
                         gradient: 'linear-gradient(135deg, #0e76ff 0%, #48b1ff 100%)',
                         label: 'Moyenne / jour',
                         value: `${stats.averageDailyReadable}/jour`,
-                        subtext: `Sur ${stats.daysSinceFirstUse} jours depuis le début`
+                        subtext: `Sur ${stats.daysSinceFirstUse} jours depuis le début • Grâce: ${stats.graceMinutesTotal || 0} min (${stats.gracePercentOfTotal || 0}%)`
                     },
                     'active-contexts': {
                         gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -8468,6 +8625,7 @@ APPROCHE DE DÉVELOPPEMENT :
                                         ${goal.isLinked ? '<span class="task-match-indicator">LIE AU CONTEXTE</span>' : '<span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 8px;">NON LIEE</span>'}
                                     </div>
                                     <div style="font-size: 12px; color: #475569; margin-bottom: 6px; margin-top:4px;">${goal.actualMinutes} min / ${goal.totalTargetMinutes} min (${goal.progressPct}%)</div>
+                                    <div style="font-size: 11px; color: #334155; margin-bottom: 6px; margin-top:4px;">Grâce: ${goal.graceMinutes || 0} min (${goal.gracePercent || 0}%)</div>
                                     <div style="height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
                                         <div style="height: 100%; width: ${goal.progressPct}%; background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);"></div>
                                     </div>
