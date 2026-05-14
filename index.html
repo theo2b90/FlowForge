@@ -5903,6 +5903,8 @@ APPROCHE DE DÉVELOPPEMENT :
             if (!context) return;
             ensureAudioContext();
             context.isRunning = true;
+            // Base de temps reelle pour compenser le throttling des onglets en arriere-plan.
+            context.lastTickMs = Date.now();
             // --- Mode Flowtime ---
             if (timerMode === 'flowtime') {
                 if (typeof context.flowtimeWorkSeconds !== 'number') context.flowtimeWorkSeconds = context.flowtimeWorkSeconds || 0;
@@ -5921,14 +5923,22 @@ APPROCHE DE DÉVELOPPEMENT :
             timers[contextId] = setInterval(() => {
                 const activeContext = getContextById(contextId);
                 if (!activeContext || !activeContext.isRunning) return;
-                advanceContext(activeContext, timeScale);
-                // Correction : on veut que Flowtime incrémente les tâches à chaque tick de travail
-                if (
-                    (timerMode === 'flowtime' && activeContext.phase === 'work') ||
-                    (timerMode !== 'flowtime' && activeContext.phase === 'work')
-                ) {
-                    checkTaskTimeMatch(activeContext.name, activeContext.totalFocusSeconds);
+                const nowMs = Date.now();
+                if (!Number.isFinite(activeContext.lastTickMs)) {
+                    activeContext.lastTickMs = nowMs;
                 }
+                const elapsedMs = nowMs - activeContext.lastTickMs;
+                if (elapsedMs < 1000) return;
+
+                const elapsedSeconds = Math.floor(elapsedMs / 1000);
+                activeContext.lastTickMs += elapsedSeconds * 1000;
+
+                // Le mode vitesse reste applique par seconde reelle ecoulee.
+                const deltaSeconds = elapsedSeconds * timeScale;
+                advanceContext(activeContext, deltaSeconds);
+
+                // Verification de la progression tache apres mise a jour du focus.
+                checkTaskTimeMatch(activeContext.name, activeContext.totalFocusSeconds);
                 save();
                 render();
                 refreshLiveInsightsPanels();
@@ -5959,6 +5969,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 context.isRunning = true;
             } else {
                 context.isRunning = false;
+                context.lastTickMs = null;
                 // Suggestion de stigmergie si la next action est vide
                 if (context.phase === 'work' && !context.nextAction.trim()) {
                     setTimeout(() => {
@@ -5995,6 +6006,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 context.flowtimeBreakSeconds = 0;
                 context.remainingSeconds = 0;
                 context.isRunning = false;
+                context.lastTickMs = null;
             } else {
                 // Ne pas réinitialiser les statistiques cumulées (moyenne/jour).
                 // L'utilisateur souhaite seulement remettre à zéro le compteur
@@ -6005,6 +6017,7 @@ APPROCHE DE DÉVELOPPEMENT :
                 // Préserver context.completedPomodoros et context.totalFocusSeconds
                 // pour ne pas impacter les stats (moyennes journalières).
                 context.isRunning = false;
+                context.lastTickMs = null;
             }
             save();
             render();
